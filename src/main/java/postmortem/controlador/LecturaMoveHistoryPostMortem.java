@@ -31,6 +31,7 @@ public class LecturaMoveHistoryPostMortem {
                 XSSFRow row = hoja.getRow(i);
                 if (row == null) continue;
 
+                String timeCompleted = getCellFecha(row.getCell(excelMoveHistory.getColTimeCompleted()));
                 String visita = getCellString(row.getCell(excelMoveHistory.getColVisit()));
                 String fetch = getCellString(row.getCell(excelMoveHistory.getColFetchCheName()));
                 String put = getCellString(row.getCell(excelMoveHistory.getColPutCheName()));
@@ -38,14 +39,17 @@ public class LecturaMoveHistoryPostMortem {
                 String crane = getCellString(row.getCell(excelMoveHistory.getColCraneCheName()));
                 String fromPos = getCellString(row.getCell(excelMoveHistory.getColFromPosition()));
                 String toPos = getCellString(row.getCell(excelMoveHistory.getColToPosition()));
+                String unitCategory = getCellString(row.getCell(excelMoveHistory.getColUnitCategory()));
 
                 if (visita.isEmpty() && fetch.isEmpty() && carry.isEmpty()) continue;
 
-                resultado.add(new DatosMoveHistory(visita, fetch, put, carry, crane, fromPos, toPos));
+                resultado.add(new DatosMoveHistory(
+                        visita, fetch, put, carry,
+                        crane, fromPos, toPos, timeCompleted,
+                        unitCategory));
             }
 
             wb.close();
-            System.out.println("[OK] MoveHistory extraídos: " + resultado.size());
 
         } catch (IOException e) {
             throw new RuntimeException("Error leyendo el Excel de MoveHistory: " + e.getMessage(), e);
@@ -69,13 +73,15 @@ public class LecturaMoveHistoryPostMortem {
             if (cell.getCellType() != CellType.STRING) continue;
             String valor = cell.getStringCellValue().trim();
             switch (valor) {
-                case "Carrier Visit":   encontradas.put(excelMoveHistory.getKeyColVisita(), cell.getColumnIndex()); break;
-                case "Fetch CHE Name":  encontradas.put(excelMoveHistory.getKeyColFetch(), cell.getColumnIndex()); break;
-                case "Put CHE Name":    encontradas.put(excelMoveHistory.getKeyColPut(), cell.getColumnIndex()); break;
-                case "Carry CHE Name":  encontradas.put(excelMoveHistory.getKeyColCarry(), cell.getColumnIndex()); break;
-                case "Time Completed":  encontradas.put(excelMoveHistory.getKeyColTimeCompleted(), cell.getColumnIndex()); break;
-                case "From Position":   encontradas.put(excelMoveHistory.getKeyColFromPosition(), cell.getColumnIndex()); break;
-                case "To Position":     encontradas.put(excelMoveHistory.getKeyColToPosition(),  cell.getColumnIndex()); break;
+                case "Carrier Visit": encontradas.put(excelMoveHistory.getKeyColVisita(), cell.getColumnIndex()); break;
+                case "Fetch CHE Name": encontradas.put(excelMoveHistory.getKeyColFetch(), cell.getColumnIndex()); break;
+                case "Put CHE Name": encontradas.put(excelMoveHistory.getKeyColPut(), cell.getColumnIndex()); break;
+                case "Crane CHE Name" : encontradas.put(excelMoveHistory.getKeyColCraneCheName(), cell.getColumnIndex()); break;
+                case "Carry CHE Name": encontradas.put(excelMoveHistory.getKeyColCarry(), cell.getColumnIndex()); break;
+                case "Time Completed": encontradas.put(excelMoveHistory.getKeyColTimeCompleted(), cell.getColumnIndex()); break;
+                case "From Position": encontradas.put(excelMoveHistory.getKeyColFromPosition(), cell.getColumnIndex()); break;
+                case "To Position": encontradas.put(excelMoveHistory.getKeyColToPosition(),  cell.getColumnIndex()); break;
+                case "Unit Category" : encontradas.put(excelMoveHistory.getKeyColUnitCategory(), cell.getColumnIndex()); break;
             }
         }
 
@@ -88,6 +94,8 @@ public class LecturaMoveHistoryPostMortem {
         validarColumna(encontradas, excelMoveHistory.getKeyColTimeCompleted());
         validarColumna(encontradas, excelMoveHistory.getKeyColFromPosition());
         validarColumna(encontradas, excelMoveHistory.getKeyColToPosition());
+        validarColumna(encontradas, excelMoveHistory.getKeyColCraneCheName());
+        validarColumna(encontradas, excelMoveHistory.getKeyColUnitCategory());
 
         excelMoveHistory.setColVisit(encontradas.get(excelMoveHistory.getKeyColVisita()));
         excelMoveHistory.setColFetchCheName(encontradas.get(excelMoveHistory.getKeyColFetch()));
@@ -96,15 +104,22 @@ public class LecturaMoveHistoryPostMortem {
         excelMoveHistory.setColTimeCompleted(encontradas.get(excelMoveHistory.getKeyColTimeCompleted()));
         excelMoveHistory.setColFromPosition(encontradas.get(excelMoveHistory.getKeyColFromPosition()));
         excelMoveHistory.setColToPosition(encontradas.get(excelMoveHistory.getKeyColToPosition()));
+        excelMoveHistory.setColCraneCheName(encontradas.get(excelMoveHistory.getKeyColCraneCheName()));
+        excelMoveHistory.setColUnitCategory(encontradas.get(excelMoveHistory.getKeyColUnitCategory()));
 
         System.out.println("[Columnas] "
                 + "Visit=" + excelMoveHistory.getColVisit()
+                + " | TimeCompleted = "+excelMoveHistory.getColTimeCompleted()
                 + " | Fetch=" + excelMoveHistory.getColFetchCheName()
                 + " | Put=" + excelMoveHistory.getColPutCheName()
                 + " | Carry=" + excelMoveHistory.getColCarryCheName()
                 + " | Time=" + excelMoveHistory.getColTimeCompleted()
                 + " | From=" + excelMoveHistory.getColFromPosition()
-                + " | To=" + excelMoveHistory.getColToPosition());
+                + " | To=" + excelMoveHistory.getColToPosition()
+                + " | Crane=" + excelMoveHistory.getColCraneCheName()
+                + " | UnitCategory=" + excelMoveHistory.getColUnitCategory()
+        );
+
     }
 
     private void validarColumna(Map<String, Integer> map, String key) {
