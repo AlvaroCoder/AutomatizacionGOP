@@ -54,7 +54,6 @@ class DeckFrame extends JFrame {
     private ControladorCostoTeuFormPanel controladorForm;
     private CuadrillasFormPanel cuadrillasForm;
 
-
     // Paleta de azules suaves (texto negro)
     private final Color azulClaro1 = new Color(0xD7, 0xEA, 0xFE); // #D7EAFE
     private final Color azulClaro2 = new Color(0xB3, 0xDB, 0xFF); // #B3DBFF
@@ -125,7 +124,6 @@ class DeckFrame extends JFrame {
         logoPanel.setOpaque(false);
         logoPanel.add(logo);
 
-        // Título + subtítulo
         JLabel title = new JLabel("Panel Deck - GOP");
         title.setFont(title.getFont().deriveFont(Font.BOLD, 20f));
         title.setForeground(Color.BLACK);
@@ -145,8 +143,6 @@ class DeckFrame extends JFrame {
         leftHeader.add(txt);
         header.add(leftHeader, BorderLayout.WEST);
 
-        // ── Fila 2: Toolbar con todos los botones ─────────────────────
-        // Usamos GridLayout para que los 4 botones se repartan el ancho disponible
         JPanel toolbar = new JPanel(new GridLayout(1, 4, 8, 0));
         toolbar.setOpaque(false);
         toolbar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
@@ -167,7 +163,6 @@ class DeckFrame extends JFrame {
         btnCuadrillas = createActionButton("Cuadrillas SAP", "/icons/cuadrillas.png");
         btnCuadrillas.setToolTipText("Extrae datos de PDFs SAP a Excel");
         btnCuadrillas.addActionListener(e -> showForm("CUADRILLAS"));
-
 
         toolbar.add(btnConta);
         toolbar.add(btnNombradas);
@@ -217,8 +212,8 @@ class DeckFrame extends JFrame {
         controladorForm.setOnExecute(this::ejecutarControladorCostoTeu);
 
         cuadrillasForm = new CuadrillasFormPanel(
-                "C:\\Temp\\CuadrillasTPE\\Naves",        // carpeta naves por defecto
-                "C:\\Temp\\CuadrillasTPE\\resultado.xlsx" // excel destino por defecto
+                "C:\\Temp\\CuadrillasTPE\\Naves",
+                "C:\\Temp\\CuadrillasTPE\\resultado.xlsx"
         );
         cuadrillasForm.setOnExecute(this::ejecutarCuadrillas);
         formContainer.add(cuadrillasForm, "CUADRILLAS");
@@ -241,6 +236,7 @@ class DeckFrame extends JFrame {
                 TitledBorder.LEFT,
                 TitledBorder.TOP
         ));
+
         ((TitledBorder) wrap.getBorder()).setTitleColor(Color.BLACK);
 
         wrap.setPreferredSize(new Dimension(0, 500));
@@ -260,7 +256,7 @@ class DeckFrame extends JFrame {
         footer.setOpaque(false);
 
         progressBar.setStringPainted(true);
-        progressBar.setForeground(new Color(0x2E7D32)); // verde progreso
+        progressBar.setForeground(new Color(0x2E7D32));
         progressBar.setBackground(Color.WHITE);
         progressBar.setPreferredSize(new Dimension(100, 26));
 
@@ -296,12 +292,10 @@ class DeckFrame extends JFrame {
     }
 
     private ImageIcon loadLogoIcon() {
-        // 1) Intentar como recurso del classpath
         try {
             URL res = getClass().getResource("/assets/logo_TPE.jpg");
             if (res != null) return new ImageIcon(res);
         } catch (Exception ignored) { }
-        // 2) Fallback a ruta de proyecto proporcionada
         File f = new File("main/java/assets/logo_TPE.jpg");
         if (f.exists()) {
             return new ImageIcon(f.getAbsolutePath());
@@ -323,7 +317,6 @@ class DeckFrame extends JFrame {
             btn.setIcon(icon);
         }
 
-        // Estilo “chip” azul muy claro
         btn.setBackground(new Color(0xDFF0FF));
         btn.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(0x9CC6FF)),
@@ -343,17 +336,14 @@ class DeckFrame extends JFrame {
                         : "/assets/error.wav"
         );
         if (!sounded) {
-            // Beep de sistema como fallback
             Toolkit.getDefaultToolkit().beep();
         }
 
-        // 2) Mostrar el diálogo (en el EDT)
         SwingUtilities.invokeLater(() -> {
-            // messageType: JOptionPane.INFORMATION_MESSAGE o JOptionPane.ERROR_MESSAGE
             JOptionPane.showMessageDialog(
-                    this,                      // padre (la ventana actual)
-                    mensaje,                   // contenido
-                    titulo,                    // título
+                    this,
+                    mensaje,
+                    titulo,
                     messageType
             );
         });
@@ -460,7 +450,7 @@ class DeckFrame extends JFrame {
 
         runTask("Agrupar Nombradas", () -> {
             AgruparNombradas nombradas = new AgruparNombradas(carpetaEntrada, carpetaSalida);
-            nombradas.leerExcels();
+            nombradas.procesar();
         });
     }
 
