@@ -82,7 +82,10 @@ public class LecturaKPIsPostMortem {
             tabla.put("BMPH", bmph);
             tabla.put("CraneIntensity", craneIntensity);
             tabla.put("TablaGruas", tablaGruas);
-            tabla.put("DetalleMov", detalleMovimientos);
+            tabla.put("Descarga", detalleMovimientos.get("Descarga"));
+            tabla.put("Embarque", detalleMovimientos.get("Embarque"));
+            tabla.put("Restibas", detalleMovimientos.get("Restibas"));
+            tabla.put("Transbordos", detalleMovimientos.get("Transbordos"));
             tabla.put("Demoras", demoras);
 
             // TODO : Para el detalle de los movimientos deberíamos de tomar la tabla de Chargeable Units Events

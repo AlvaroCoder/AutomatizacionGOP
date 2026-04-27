@@ -21,7 +21,5 @@ public class Papelito {
         String rutaPdf = "C:\\Users\\alvaro.pupuche\\Desktop\\TEUCOST\\postmortem_"+visita+".pdf";
 
         pagina.generarPagina(navePrueba, rutaPdf);
-
-
     }
 }

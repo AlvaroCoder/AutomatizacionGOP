@@ -99,20 +99,18 @@ public class PaginaIndicadores {
         return sb.toString();
     }
 
-    // ==========================================================
-    // SECCIONES HTML
-    // ==========================================================
 
     private String htmlHead() {
         return "<!DOCTYPE html><html><head><meta charset='UTF-8'/>"
                 + "<style>" + css() + "</style></head>";
+
     }
 
     private String barraTitulo() {
         return "<div class='title-bar'>"
                 + "<span class='back-arrow'>&#8592;</span>"
                 + "<span class='title-text'>POST-MORTEM</span>"
-                + "<span class='logo-text'>&#8776; EUROANDINOS</span>"
+                + "<span class='logo-text'>TERMINALES PORTUARIOS EUROANDINOS</span>"
                 + "</div>";
     }
 
@@ -152,7 +150,6 @@ public class PaginaIndicadores {
         // Encabezado Planeado / Ejecutado
         sb.append("<thead><tr>"
                 + "<th class='col-indicador'></th>"
-                + "<th colspan='2' class='col-planeado'>Planeado</th>"
                 + "<th colspan='2' class='col-ejecutado'>Ejecutado</th>"
                 + "</tr></thead><tbody>");
 
@@ -185,8 +182,6 @@ public class PaginaIndicadores {
         String cls = oscuro ? "kpi-dark" : "kpi-light";
         return "<tr class='" + cls + "'>"
                 + "<td class='td-indicador'>" + indicador + "</td>"
-                + "<td class='td-val-plan'>" + planVal + "</td>"
-                + "<td class='td-unid'>" + planUnid + "</td>"
                 + "<td class='td-val-ejec'>" + ejVal + "</td>"
                 + "<td class='td-unid'>" + ejUnid + "</td>"
                 + "</tr>";
