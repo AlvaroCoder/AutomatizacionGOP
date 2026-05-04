@@ -2,6 +2,9 @@ package postmortem.pdf;
 
 import com.itextpdf.html2pdf.ConverterProperties;
 import com.itextpdf.html2pdf.HtmlConverter;
+import com.itextpdf.kernel.geom.PageSize;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfWriter;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -11,32 +14,117 @@ import java.util.Map;
 
 public class PaginaIndicadores {
 
-    // ── Colores del diseño ────────────────────────────────────
-    private static final String AZUL_OSCURO  = "#1a2e4a";
-    private static final String AZUL_MEDIO   = "#2e4d7b";
-    private static final String AZUL_CLARO   = "#5b7fa6";
-    private static final String AZUL_HEADER  = "#3a5f8a";
-    private static final String VERDE_PROD   = "#c8f0c8";
-    private static final String FONDO_TABLA  = "#e8f0f8";
-    private static final String FONDO_PAGINA = "#f0f4f0";
+    // ── CSS embebido (tu styleTabla.css completo) ─────────────
+    private static final String CSS =
+            "body { font-family: Arial, sans-serif; font-size: 12px; margin: 0; padding: 0; }"
+                    + ".pm-page { margin: 0; background: #fff; width: 100%; }"
 
-    /**
-     * Genera el PDF de la página de indicadores.
-     *
-     * @param kpi          Mapa con todos los KPIs de la visita (salida de LecturaKPIsPostMortem)
-     * @param rutaSalida   Ruta completa del PDF a generar (ej: "C:/out/postmortem.pdf")
-     */
+                    + ".title-bar { background: #162947; color: #fff; display: flex; align-items: center;"
+                    + "  justify-content: space-between; padding: 8px 16px; }"
+                    + ".title-bar .arrow { font-size: 16px; color: #7eb8f7; }"
+                    + ".title-bar .title { font-size: 15px; font-weight: bold; letter-spacing: 3px;"
+                    + "  text-transform: uppercase; }"
+                    + ".title-bar .logo { font-size: 10px; color: #7eb8f7; text-align: right; line-height: 1.5; }"
+
+                    + ".nav-datos-nave { display: flex; flex-direction: row;"
+                    + "  justify-content: space-evenly; flex: 1; }"
+                    + ".nav-header { display: flex; align-items: stretch;"
+                    + "  border-bottom: 1.5px solid #162947; background: #fff; }"
+                    + ".nav-name { border: 1.5px solid #5b7fa6; border-radius: 8px; padding: 6px 12px;"
+                    + "  margin: 6px; min-width: 140px; display: flex; flex-direction: column;"
+                    + "  text-align: center; }"
+                    + ".nav-name .nave { font-weight: bold; color: #2e4d7b; font-size: 12px; }"
+                    + ".nav-name .fecha { font-size: 10px; color: #666; }"
+                    + ".hcell { padding: 5px 14px; border-left: 0.5px solid #ddd;"
+                    + "  display: flex; flex-direction: column; justify-content: center; }"
+                    + ".hcell .hval { font-weight: bold; font-size: 12px; color: #111; }"
+                    + ".hcell .hlbl { font-size: 9px; color: #888; margin-top: 2px;"
+                    + "  text-transform: uppercase; letter-spacing: 0.5px; }"
+
+                    + ".main-body { display: flex; }"
+                    + ".left-col { width: 46%; border-right: 0.5px solid #ddd; }"
+                    + ".right-col { flex: 1; background: #eef6ee; padding: 20px 16px; }"
+
+                    + ".kpi-table { width: 100%; border-collapse: collapse; }"
+                    + ".kpi-table thead tr th { background: #162947; color: #fff; padding: 8px 12px;"
+                    + "  text-align: center; font-size: 11px; font-weight: bold; letter-spacing: 2px;"
+                    + "  text-transform: uppercase; }"
+
+                    + ".sec-divider td { background: #2a4472; color: #a8c4f0; font-size: 9px;"
+                    + "  font-weight: bold; letter-spacing: 2px; text-transform: uppercase;"
+                    + "  padding: 3px 12px; }"
+
+                    + ".krow { border-bottom: 0.5px solid #e0e7f0; }"
+                    + ".krow:nth-child(odd) td { background: #eef3fb; }"
+                    + ".krow:nth-child(even) td { background: #fff; }"
+
+                    + ".col-lbl { padding: 7px 12px; text-align: left; color: #2d3a52; width: 55%; }"
+                    + ".col-val { padding: 7px 6px; text-align: right; font-weight: bold;"
+                    + "  font-size: 12px; color: #162947; width: 22%; }"
+                    + ".col-uni { padding: 7px 12px 7px 4px; font-size: 10px; color: #6b82a8; width: 23%; }"
+
+                    + ".krow.gkpi  .col-lbl { border-left: 2.5px solid #3a6fd8; }"
+                    + ".krow.gmov  .col-lbl { border-left: 2.5px solid #1e8c5a; }"
+                    + ".krow.gtime .col-lbl { border-left: 2.5px solid #c47a1e; }"
+
+                    + ".row-total td { background: #162947 !important; color: #fff;"
+                    + "  font-weight: bold; padding: 8px 12px; }"
+                    + ".row-total .col-val { color: #7eb8f7; text-align: right; }"
+                    + ".row-total .col-uni { color: #7eb8f7; }"
+
+                    + ".dem-row td { background: #2a2a2a; color: #ddd; padding: 5px 12px;"
+                    + "  border-bottom: 0.5px solid #333; font-size: 11px; }"
+                    + ".dem-val { text-align: right; }"
+                    + ".dem-pct { color: #aaa; }"
+
+                    + ".chart-block { margin-bottom: 28px; }"
+                    + ".chart-title { font-weight: bold; font-size: 13px; text-align: center;"
+                    + "  margin-bottom: 4px; }"
+                    + ".chart-total { text-align: center; font-size: 28px; font-weight: bold;"
+                    + "  margin-bottom: 14px; }"
+                    + ".chart-total-sm { font-size: 20px; }"
+
+                    + ".bar-row { display: flex; align-items: center; margin-bottom: 8px; gap: 8px; }"
+                    + ".bar-lbl { min-width: 48px; font-size: 10px; font-weight: bold;"
+                    + "  color: #555; text-align: right; }"
+                    + ".bar-track { flex: 1; background: #d0dde8; height: 22px; }"
+                    + ".bar-fill { height: 100%; display: flex; align-items: center;"
+                    + "  justify-content: flex-end; padding-right: 7px; }"
+                    + ".bar-num { color: #fff; font-weight: bold; font-size: 11px; }"
+
+                    + ".dem-bar-row { display: flex; align-items: center; margin-bottom: 10px; gap: 8px; }"
+                    + ".dem-bar-lbl { min-width: 110px; font-size: 10px; color: #555; text-align: right; }"
+                    + ".dem-bar-track { flex: 1; background: #c8d8c8; height: 18px; }"
+                    + ".dem-bar-fill { height: 100%; }"
+                    + ".dem-hrs { min-width: 52px; font-size: 10px; font-weight: bold; }"
+                    + ".dem-badge { color: #fff; padding: 2px 7px; font-size: 10px; font-weight: bold;"
+                    + "  min-width: 34px; text-align: center; border-radius: 3px; }"
+
+                    + ".axis-labels { display: flex; justify-content: space-between; font-size: 9px;"
+                    + "  color: #888; margin-top: 4px; }"
+                    + ".axis-title { text-align: center; font-size: 9px; color: #888; margin-top: 4px; }";
+
+    // ==========================================================
+    // PUNTO DE ENTRADA
+    // ==========================================================
     public void generarPagina(Map<String, Object> kpi, String rutaSalida) {
         String html = construirHtml(kpi);
         convertirHtmlAPdf(html, rutaSalida);
-        System.out.println("[PDF] Página de indicadores generada: " + rutaSalida);
+        System.out.println("[PDF] Página indicadores generada: " + rutaSalida);
     }
 
-    /**
-     * Devuelve el HTML como String (útil para debug o preview en navegador).
-     */
-    public String generarHtml(Map<String, Object> kpi) {
-        return construirHtml(kpi);
+    /** Útil para previsualizar en navegador antes de convertir a PDF */
+    public void guardarHtml(Map<String, Object> kpi, String rutaHtml) {
+        try {
+            String html = construirHtml(kpi);
+            try (Writer w = new OutputStreamWriter(
+                    new FileOutputStream(rutaHtml), StandardCharsets.UTF_8)) {
+                w.write(html);
+            }
+            System.out.println("[HTML] Guardado en: " + rutaHtml);
+        } catch (Exception e) {
+            throw new RuntimeException("Error guardando HTML: " + e.getMessage(), e);
+        }
     }
 
     // ==========================================================
@@ -44,428 +132,274 @@ public class PaginaIndicadores {
     // ==========================================================
     private String construirHtml(Map<String, Object> kpi) {
 
-        // ── Extraer datos del mapa ────────────────────────────
-        String visita      = str(kpi, "Visita");
-        String linea       = str(kpi, "Linea");
-        String servicio    = str(kpi, "Servicio");
-        String berthATA    = str(kpi, "BerthATA");
-        String berthATD    = str(kpi, "BerthATD");
-        String startWork   = str(kpi, "StartWork");
-        String endWork     = str(kpi, "EndWork");
-        double gmph        = dbl(kpi, "GMPH");
-        double bmph        = dbl(kpi, "BMPH");
-        double durOp       = dbl(kpi, "DuracionOp");
-        double craneInt    = dbl(kpi, "CraneIntensity");
-        int    totalMovs   = integer(kpi, "TotalMovimientos");
+        // ── Datos del encabezado ──────────────────────────────
+        String nombreNave = str(kpi, "NombreNave");
+        String fechaNave  = str(kpi, "FechaNave");
+        String linea      = str(kpi, "Linea");
+        String servicio   = str(kpi, "Servicio");
+        String visita     = str(kpi, "Visita");
+        String muelle     = str(kpi, "Muelle");
+        String inicioOp   = str(kpi, "StartWork");
+        String finOp      = str(kpi, "EndWork");
 
+        // ── KPIs ─────────────────────────────────────────────
+        String craneInt   = fmt(dbl(kpi, "CraneIntensity"));
+        String gruas      = fmt((double) integer(kpi, "GruasUtilizadas"));
+        String durOp      = fmt(dbl(kpi, "DuracionOp"));
+        String longGang   = fmt((double) integer(kpi, "LongGang"));
+        String gmph       = fmt(dbl(kpi, "GMPH"));
+        String bmph       = fmt(dbl(kpi, "BMPH"));
+
+        // ── Movimientos ───────────────────────────────────────
+        int descarga    = integer(kpi, "Descarga");
+        int embarque    = integer(kpi, "Embarque");
+        int restibas    = integer(kpi, "Restibas");
+        int transbordos = integer(kpi, "Transbordos");
+        int totalMovs   = integer(kpi, "TotalMovimientos");
+
+        // ── Tiempos ───────────────────────────────────────────
+        int flfm = integer(kpi, "FL_FM_Min");
+        int lmll = integer(kpi, "LM_LL_Min");
+
+        // ── Grúas y demoras ───────────────────────────────────
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> tablaGruas =
                 (List<Map<String, Object>>) kpi.get("TablaGruas");
 
-        // Long Gang = movs de la grúa con más movimientos
-        int longGang = tablaGruas.stream()
-                .mapToInt(g -> integer(g, "Movs"))
-                .max().orElse(0);
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> demoras =
+                (List<Map<String, Object>>) kpi.get("Demoras");
 
-        // Grúas utilizadas = cantidad de grúas STS
-        int gruasUtilizadas = tablaGruas.size();
+        double totalHrsDemoras = demoras.stream()
+                .mapToDouble(d -> dbl(d, "DurHrs")).sum();
 
-        StringBuilder sb = new StringBuilder();
-        sb.append(htmlHead());
-        sb.append("<body>");
-
-        // ── Barra de título ───────────────────────────────────
-        sb.append(barraTitulo());
-
-        // ── Encabezado de nave ────────────────────────────────
-        sb.append(encabezadoNave(visita, berthATA, linea, servicio,
-                visita, "2", startWork, endWork));
-
-        // ── Cuerpo principal: tabla izquierda + gráficas derecha
-        sb.append("<div class='main-body'>");
-        sb.append("<div class='left-panel'>");
-        sb.append(tablaIndicadores(craneInt, gruasUtilizadas, durOp,
-                longGang, bmph, gmph, kpi));
-        sb.append("</div>"); // left-panel
-
-        sb.append("<div class='right-panel'>");
-        sb.append(graficaMovimientosEfectivos(totalMovs, tablaGruas));
-        sb.append(graficaSegregacionDemoras(kpi));
-        sb.append("</div>"); // right-panel
-
-        sb.append("</div>"); // main-body
-        sb.append("</body></html>");
-
-        return sb.toString();
+        // ── Armar HTML ────────────────────────────────────────
+        return "<!DOCTYPE html><html lang='es'><head>"
+                + "<meta charset='UTF-8'/>"
+                + "<style>" + CSS + "</style>"
+                + "</head><body>"
+                + "<div class='pm-page'>"
+                + barraTitulo()
+                + encabezadoNave(nombreNave, fechaNave, linea, servicio,
+                visita, muelle, inicioOp, finOp)
+                + "<div class='main-body'>"
+                + "<div class='left-col'>"
+                + tablaKpi(craneInt, gruas, durOp, longGang, gmph, bmph,
+                descarga, embarque, restibas, transbordos, totalMovs,
+                flfm, lmll, demoras)
+                + "</div>"
+                + "<div class='right-col'>"
+                + graficaMovimientos(totalMovs, tablaGruas)
+                + graficaDemoras(totalHrsDemoras, demoras)
+                + "</div>"
+                + "</div>"
+                + "</div>"
+                + "</body></html>";
     }
 
-
-    private String htmlHead() {
-        return "<!DOCTYPE html><html><head><meta charset='UTF-8'/>"
-                + "<style>" + css() + "</style></head>";
-
-    }
+    // ==========================================================
+    // SECCIONES HTML
+    // ==========================================================
 
     private String barraTitulo() {
         return "<div class='title-bar'>"
-                + "<span class='back-arrow'>&#8592;</span>"
-                + "<span class='title-text'>POST-MORTEM</span>"
-                + "<span class='logo-text'>TERMINALES PORTUARIOS EUROANDINOS</span>"
+                + "<span class='arrow'>&#8592;</span>"
+                + "<span class='title'>Post-Mortem</span>"
+                + "<span class='logo'>&#8776; EUROANDINOS<br/>Terminales Portuarios</span>"
                 + "</div>";
     }
 
     private String encabezadoNave(String nombreNave, String fechaNave,
-                                  String linea, String servicio,
-                                  String visita, String muelle,
-                                  String inicioOp, String finOp) {
+                                  String linea,     String servicio,
+                                  String visita,    String muelle,
+                                  String inicioOp,  String finOp) {
         return "<div class='nav-header'>"
                 + "<div class='nav-name'>"
-                + "<div class='nave-titulo'>" + nombreNave + "</div>"
-                + "<div class='nave-fecha'>" + fechaNave + "</div>"
+                + "<span class='nave'>" + nombreNave + "</span>"
+                + "<span class='fecha'>" + fechaNave  + "</span>"
                 + "</div>"
-                + celdaHeader(linea,   "Linea")
-                + celdaHeader(servicio, "Servicio")
-                + celdaHeader(visita,   "Visita")
-                + celdaHeader(muelle,   "Muelle")
-                + celdaHeader(inicioOp, "Inicio de Operaciones")
-                + celdaHeader(finOp,    "Fin de Operaciones")
+                + "<div class='nav-datos-nave'>"
+                + hcell(linea,    "Linea")
+                + hcell(servicio, "Servicio")
+                + hcell(visita,   "Visita")
+                + hcell(muelle,   "Muelle")
+                + hcell(inicioOp, "Inicio de operaciones")
+                + hcell(finOp,    "Fin de operaciones")
+                + "</div>"
                 + "</div>";
     }
 
-    private String celdaHeader(String valor, String etiqueta) {
-        return "<div class='header-cell'>"
-                + "<div class='header-valor'>" + valor + "</div>"
-                + "<div class='header-label'>" + etiqueta + "</div>"
+    private String hcell(String valor, String etiqueta) {
+        return "<div class='hcell'>"
+                + "<div class='hval'>" + valor    + "</div>"
+                + "<div class='hlbl'>" + etiqueta + "</div>"
                 + "</div>";
     }
 
-    // ── Tabla de indicadores (lado izquierdo) ─────────────────
-    private String tablaIndicadores(double craneInt, int gruasUtilizadas,
-                                    double durOp, int longGang,
-                                    double bmph, double gmph,
-                                    Map<String, Object> kpi) {
+    private String tablaKpi(String craneInt, String gruas, String durOp,
+                            String longGang, String gmph,  String bmph,
+                            int descarga,   int embarque,  int restibas,
+                            int transbordos, int totalMovs,
+                            int flfm,        int lmll,
+                            List<Map<String, Object>> demoras) {
         StringBuilder sb = new StringBuilder();
-        sb.append("<table class='kpi-table'>");
+        sb.append("<table class='kpi-table'><thead><tr><th colspan='3'>Ejecutado</th></tr></thead><tbody>");
 
-        // Encabezado Planeado / Ejecutado
-        sb.append("<thead><tr>"
-                + "<th class='col-indicador'></th>"
-                + "<th colspan='2' class='col-ejecutado'>Ejecutado</th>"
-                + "</tr></thead><tbody>");
+        // Grupo: indicadores de grúa
+        sb.append(secDivider("Indicadores de gr&#250;a"));
+        sb.append(krow("gkpi", "Crane Intensity",   craneInt, "QC's"));
+        sb.append(krow("gkpi", "Gr&#250;as utilizadas", gruas,  "QC's"));
+        sb.append(krow("gkpi", "Duraci&#243;n operaci&#243;n", durOp, "Hrs"));
+        sb.append(krow("gkpi", "Long Gang",          longGang, "Movs"));
+        sb.append(krow("gkpi", "GMPH",               gmph,     "MPH"));
+        sb.append(krow("gkpi", "BMPH",               bmph,     "MPH"));
 
-        // Filas de indicadores
-        sb.append(filaKpi("Crane Intensity", "", "QC's",
-                fmt2(craneInt), "QC's", false));
-        sb.append(filaKpi("Grúas utilizadas", "", "QC's",
-                fmt2((double) gruasUtilizadas), "QC's", false));
-        sb.append(filaKpi("Duración Operación", "", "Hrs",
-                fmt2(durOp), "Hrs", false));
-        sb.append(filaKpi("Long Gang", "", "Movs",
-                fmt2((double) longGang), "Movs", false));
-        sb.append(filaKpi("BMPH", "", "MPH",
-                fmt2(bmph), "MPH", false));
-        sb.append(filaKpi("GMPH", "", "MPH",
-                fmt2(gmph), "MPH", false));
+        // Grupo: movimientos
+        sb.append(secDivider("Movimientos"));
+        sb.append(krow("gmov", "Descarga",    String.valueOf(descarga),    "Movs"));
+        sb.append(krow("gmov", "Embarque",    String.valueOf(embarque),    "Movs"));
+        sb.append(krow("gmov", "Reestibas",   String.valueOf(restibas),    "Movs"));
+        sb.append(krow("gmov", "Transbordos", String.valueOf(transbordos), "Movs"));
+        sb.append("<tr class='row-total'>"
+                + "<td class='col-lbl'>Movimientos</td>"
+                + "<td class='col-val'>" + totalMovs + "</td>"
+                + "<td class='col-uni'>Movs</td></tr>");
 
-        // Movimientos (fondo azul oscuro)
-        sb.append(filasMovimientos(kpi));
+        // Grupo: tiempos
+        sb.append(secDivider("Tiempos"));
+        sb.append(krow("gtime", "First Line to First Move", String.valueOf(flfm), "Min"));
+        sb.append(krow("gtime", "Last Move to Last Line",   String.valueOf(lmll), "Min"));
 
-        // Demoras principales
-        sb.append(filasDemoras(kpi));
+        // Grupo: demoras
+        sb.append(secDivider("Demoras principales"));
+        for (Map<String, Object> d : demoras) {
+            String nombre = str(d, "Nombre");
+            String hrs    = fmt(dbl(d, "DurHrs"));
+            String pct    = fmt(dbl(d, "PctHrsQc"));
+            sb.append("<tr class='dem-row'>"
+                    + "<td>" + nombre + "</td>"
+                    + "<td class='dem-val'>" + hrs + "</td>"
+                    + "<td class='dem-pct'>Hrs &nbsp; " + pct + "%</td>"
+                    + "</tr>");
+        }
 
         sb.append("</tbody></table>");
         return sb.toString();
     }
 
-    private String filaKpi(String indicador, String planVal, String planUnid,
-                           String ejVal, String ejUnid, boolean oscuro) {
-        String cls = oscuro ? "kpi-dark" : "kpi-light";
-        return "<tr class='" + cls + "'>"
-                + "<td class='td-indicador'>" + indicador + "</td>"
-                + "<td class='td-val-ejec'>" + ejVal + "</td>"
-                + "<td class='td-unid'>" + ejUnid + "</td>"
+    private String secDivider(String label) {
+        return "<tr class='sec-divider'><td colspan='3'>" + label + "</td></tr>";
+    }
+
+    private String krow(String grupo, String label, String valor, String unidad) {
+        return "<tr class='krow " + grupo + "'>"
+                + "<td class='col-lbl'>" + label  + "</td>"
+                + "<td class='col-val'>" + valor  + "</td>"
+                + "<td class='col-uni'>" + unidad + "</td>"
                 + "</tr>";
     }
 
-    private String filasMovimientos(Map<String, Object> kpi) {
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> gruas =
-                (List<Map<String, Object>>) kpi.get("TablaGruas");
-
-        // Calcular descarga/embarque desde los datos de grúas si los tienes,
-        // o dejar placeholder. Ajusta según tus datos reales.
-        int descarga     = integer(kpi, "Descarga");
-        int embarque     = integer(kpi, "Embarque");
-        int restibas     = integer(kpi, "Restibas");
-        int transbordos  = integer(kpi, "Transbordos");
-        int totalMovs    = integer(kpi, "TotalMovimientos");
-
-        StringBuilder sb = new StringBuilder();
-
-        // Fila Descarga con badge FL-FM
-        sb.append("<tr class='kpi-movs'>"
-                + "<td class='td-movs-label'>Descarga</td>"
-                + "<td class='td-movs-val'>" + descarga + "</td>"
-                + "<td class='td-movs-unid'>movs</td>"
-                + "<td colspan='2'><span class='badge-flor'>FL-FM</span>"
-                + " <span class='badge-min'>36 min</span></td>"
-                + "</tr>");
-
-        // Fila Embarque con badge LM-LL
-        sb.append("<tr class='kpi-movs'>"
-                + "<td class='td-movs-label'>Embarque</td>"
-                + "<td class='td-movs-val'>" + embarque + "</td>"
-                + "<td class='td-movs-unid'>movs</td>"
-                + "<td colspan='2'><span class='badge-lmll'>LM-LL</span>"
-                + " <span class='badge-min'>44 min</span></td>"
-                + "</tr>");
-
-        sb.append("<tr class='kpi-movs'>"
-                + "<td class='td-movs-label'>Restibas</td>"
-                + "<td class='td-movs-val'>" + restibas + "</td>"
-                + "<td class='td-movs-unid'>movs</td><td></td><td></td></tr>");
-
-        sb.append("<tr class='kpi-movs'>"
-                + "<td class='td-movs-label'>Transbordos</td>"
-                + "<td class='td-movs-val'>" + transbordos + "</td>"
-                + "<td class='td-movs-unid'>movs</td><td></td><td></td></tr>");
-
-        sb.append("<tr class='kpi-total'>"
-                + "<td class='td-total-label'>MOVIMIENTOS</td>"
-                + "<td class='td-total-val'>" + totalMovs + "</td>"
-                + "<td class='td-total-unid'>movs</td><td></td><td></td></tr>");
-
-        return sb.toString();
-    }
-
-    private String filasDemoras(Map<String, Object> kpi) {
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> demoras =
-                (List<Map<String, Object>>) kpi.get("Demoras");
-
-        if (demoras.isEmpty()) return "";
-
-        StringBuilder sb = new StringBuilder();
-
-        // Encabezado de demoras
-        sb.append("<tr class='demoras-header'>"
-                + "<td rowspan='" + (demoras.size() + 1) + "' class='td-demoras-titulo'>"
-                + "<b>Demoras<br/>Principales</b></td>"
-                + "<td>Demoras</td>"
-                + "<td></td>"
-                + "<td>Durac (Hrs)</td>"
-                + "<td>% Hrs Qc</td>"
-                + "</tr>");
-
-        for (Map<String, Object> demora : demoras) {
-            sb.append("<tr class='demoras-row'>"
-                    + "<td>" + str(demora, "Nombre") + "</td>"
-                    + "<td></td>"
-                    + "<td>" + fmt2(dbl(demora, "DurHrs")) + "</td>"
-                    + "<td>" + fmt2(dbl(demora, "PctHrsQc")) + " %</td>"
-                    + "</tr>");
-        }
-
-        return sb.toString();
-    }
-
-    // ── Gráfica movimientos efectivos (lado derecho) ──────────
-    private String graficaMovimientosEfectivos(int totalMovs,
-                                               List<Map<String, Object>> tablaGruas) {
+    private String graficaMovimientos(int totalMovs,
+                                      List<Map<String, Object>> tablaGruas) {
         if (tablaGruas.isEmpty()) return "";
 
         int maxMovs = tablaGruas.stream()
-                .mapToInt(g -> integer(g, "Movs"))
-                .max().orElse(1);
+                .mapToInt(g -> integer(g, "Movs")).max().orElse(1);
 
         StringBuilder sb = new StringBuilder();
-        sb.append("<div class='chart-section'>");
-        sb.append("<div class='chart-title'>Movimientos Efectivos</div>");
+        sb.append("<div class='chart-block'>");
+        sb.append("<div class='chart-title'>Movimientos efectivos</div>");
         sb.append("<div class='chart-total'>" + totalMovs + "</div>");
-        sb.append("<div class='bar-chart'>");
 
-        // Una barra horizontal por grúa
+        // Paleta azul para las grúas
+        String[] colores = {"#2e4d7b", "#5b7fa6", "#3a6fd8", "#162947"};
+        int ci = 0;
+
         for (Map<String, Object> grua : tablaGruas) {
             String nombre = str(grua, "Grua");
             int movs      = integer(grua, "Movs");
             int pct       = (int) ((movs / (double) maxMovs) * 100);
+            String color  = colores[ci++ % colores.length];
 
             sb.append("<div class='bar-row'>"
-                    + "<span class='bar-label'>" + nombre + "</span>"
+                    + "<span class='bar-lbl'>" + nombre + "</span>"
                     + "<div class='bar-track'>"
-                    + "<div class='bar-fill' style='width:" + pct + "%'>"
-                    + "<span class='bar-value'>" + movs + "</span>"
+                    + "<div class='bar-fill' style='width:" + pct
+                    + "%;background:" + color + "'>"
+                    + "<span class='bar-num'>" + movs + "</span>"
                     + "</div></div></div>");
         }
 
-        sb.append("</div></div>"); // bar-chart + chart-section
+        // Eje X dinámico
+        sb.append("<div class='axis-labels' style='padding-left:56px'>");
+        int step = Math.max(1, (maxMovs / 4));
+        for (int i = 0; i <= 4; i++) sb.append("<span>" + (step * i) + "</span>");
+        sb.append("</div>");
+
+        sb.append("</div>");
         return sb.toString();
     }
 
-    // ── Gráfica segregación de demoras ────────────────────────
-    private String graficaSegregacionDemoras(Map<String, Object> kpi) {
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> demoras =
-                (List<Map<String, Object>>) kpi.get("Demoras");
-
+    private String graficaDemoras(double totalHrs,
+                                  List<Map<String, Object>> demoras) {
         if (demoras.isEmpty()) return "";
 
-        double totalHrs = demoras.stream()
-                .mapToDouble(d -> dbl(d, "DurHrs"))
-                .sum();
+        String[] colores = {"#c0392b", "#e67e22", "#f1c40f", "#27ae60", "#2980b9"};
+        int ci = 0;
 
         StringBuilder sb = new StringBuilder();
-        sb.append("<div class='chart-section'>");
-        sb.append("<div class='chart-title'>Segregación de Demoras</div>");
-        sb.append("<div class='chart-total'>" + fmt2(totalHrs) + "</div>");
-        sb.append("<div class='demoras-chart'>");
+        sb.append("<div class='chart-block'>");
+        sb.append("<div class='chart-title'>Segregaci&#243;n de demoras</div>");
+        sb.append("<div class='chart-total chart-total-sm'>"
+                + fmt(totalHrs) + " Hrs</div>");
 
-        // Paleta de colores para las barras de demoras
-        String[] colores = {"#c0392b", "#e67e22", "#f1c40f", "#27ae60", "#2980b9"};
-        int colorIdx = 0;
-
-        for (Map<String, Object> demora : demoras) {
-            String nombre = str(demora, "Nombre");
-            double hrs    = dbl(demora, "DurHrs");
-            double pct    = dbl(demora, "PctHrsQc");
+        for (Map<String, Object> d : demoras) {
+            String nombre = str(d, "Nombre");
+            double hrs    = dbl(d, "DurHrs");
+            double pct    = dbl(d, "PctHrsQc");
             int barPct    = totalHrs > 0 ? (int) ((hrs / totalHrs) * 100) : 0;
-            String color  = colores[colorIdx % colores.length];
-            colorIdx++;
+            String color  = colores[ci++ % colores.length];
 
-            sb.append("<div class='demora-row'>"
-                    + "<span class='demora-label'>" + nombre + "</span>"
-                    + "<div class='demora-track'>"
-                    + "<div class='demora-bar' style='width:" + barPct
-                    + "%;background:" + color + "'></div>"
-                    + "</div>"
-                    + "<span class='demora-hrs'>" + fmt2(hrs) + " Hrs</span>"
-                    + "<span class='demora-pct badge-pct' style='background:" + color + "'>"
+            sb.append("<div class='dem-bar-row'>"
+                    + "<span class='dem-bar-lbl'>" + nombre + "</span>"
+                    + "<div class='dem-bar-track'>"
+                    + "<div class='dem-bar-fill' style='width:" + barPct
+                    + "%;background:" + color + "'></div></div>"
+                    + "<span class='dem-hrs'>" + fmt(hrs) + " Hrs</span>"
+                    + "<span class='dem-badge' style='background:" + color + "'>"
                     + (int) Math.round(pct) + "%</span>"
                     + "</div>");
         }
 
-        sb.append("</div></div>"); // demoras-chart + chart-section
+        // Eje X fijo (en horas)
+        sb.append("<div class='axis-labels' style='padding-left:118px'>"
+                + "<span>0,0</span><span>0,1</span><span>0,2</span>"
+                + "<span>0,3</span><span>0,4</span></div>");
+        sb.append("<div class='axis-title'>Horas</div>");
+        sb.append("</div>");
         return sb.toString();
     }
 
     // ==========================================================
-    // CSS
-    // ==========================================================
-    private String css() {
-        return
-                // Reset y base
-                "* { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; font-size: 11px; }"
-                        + "body { background: " + FONDO_PAGINA + "; width: 1200px; }"
-
-                        // Barra de título
-                        + ".title-bar { background: " + AZUL_OSCURO + "; color: white; "
-                        + "  display: flex; align-items: center; justify-content: space-between; "
-                        + "  padding: 8px 16px; font-size: 18px; font-weight: bold; }"
-                        + ".back-arrow { font-size: 20px; cursor: pointer; }"
-                        + ".logo-text { font-size: 13px; }"
-
-                        // Encabezado de nave
-                        + ".nav-header { display: flex; align-items: stretch; "
-                        + "  border-bottom: 2px solid " + AZUL_OSCURO + "; background: white; }"
-                        + ".nav-name { background: white; border: 2px solid " + AZUL_CLARO + "; "
-                        + "  border-radius: 8px; padding: 6px 12px; margin: 4px; min-width: 140px; "
-                        + "  display: flex; flex-direction: column; justify-content: center; }"
-                        + ".nave-titulo { font-weight: bold; color: " + AZUL_MEDIO + "; font-size: 12px; }"
-                        + ".nave-fecha { font-size: 10px; color: #555; }"
-                        + ".header-cell { padding: 4px 12px; border-left: 1px solid #ddd; "
-                        + "  display: flex; flex-direction: column; justify-content: center; }"
-                        + ".header-valor { font-weight: bold; font-size: 13px; }"
-                        + ".header-label { font-size: 9px; color: #777; margin-top: 2px; }"
-
-                        // Layout principal
-                        + ".main-body { display: flex; padding: 8px; gap: 12px; }"
-                        + ".left-panel { flex: 0 0 480px; }"
-                        + ".right-panel { flex: 1; background: #e8f5e8; border-radius: 8px; padding: 10px; }"
-
-                        // Tabla KPI
-                        + ".kpi-table { width: 100%; border-collapse: collapse; }"
-                        + ".kpi-table thead tr th { background: " + AZUL_OSCURO + "; color: white; "
-                        + "  padding: 6px; text-align: center; }"
-                        + ".col-indicador { width: 38%; }"
-                        + ".col-planeado { width: 31%; background: " + AZUL_CLARO + " !important; }"
-                        + ".col-ejecutado { width: 31%; background: " + AZUL_MEDIO + " !important; }"
-                        + ".kpi-light td { padding: 5px 8px; border-bottom: 1px solid #ddd; "
-                        + "  background: " + FONDO_TABLA + "; }"
-                        + ".kpi-dark td { padding: 5px 8px; border-bottom: 1px solid #ddd; "
-                        + "  background: " + AZUL_CLARO + "; color: white; }"
-                        + ".td-indicador { text-align: left; font-weight: normal; }"
-                        + ".td-val-plan { text-align: right; color: #aaa; }"
-                        + ".td-val-ejec { text-align: right; font-weight: bold; font-size: 12px; }"
-                        + ".td-unid { text-align: left; padding-left: 4px; color: #666; }"
-
-                        // Filas de movimientos
-                        + ".kpi-movs td { padding: 4px 8px; background: " + AZUL_MEDIO + "; "
-                        + "  color: white; border-bottom: 1px solid " + AZUL_OSCURO + "; }"
-                        + ".td-movs-label { font-weight: normal; }"
-                        + ".td-movs-val { text-align: right; font-weight: bold; }"
-                        + ".td-movs-unid { text-align: left; padding-left: 4px; }"
-                        + ".kpi-total td { padding: 5px 8px; background: " + AZUL_OSCURO + "; "
-                        + "  color: white; font-weight: bold; font-size: 12px; }"
-                        + ".td-total-val { text-align: right; }"
-                        + ".td-total-unid { text-align: left; padding-left: 4px; }"
-
-                        // Badges FL-FM / LM-LL
-                        + ".badge-flor { background: " + AZUL_MEDIO + "; color: white; "
-                        + "  padding: 2px 6px; border-radius: 3px; font-weight: bold; }"
-                        + ".badge-lmll { background: " + AZUL_CLARO + "; color: white; "
-                        + "  padding: 2px 6px; border-radius: 3px; font-weight: bold; }"
-                        + ".badge-min { color: white; font-weight: bold; }"
-
-                        // Demoras
-                        + ".demoras-header td { background: #2c2c2c; color: white; "
-                        + "  padding: 4px 8px; font-size: 10px; }"
-                        + ".td-demoras-titulo { background: #2c2c2c; color: white; "
-                        + "  text-align: center; vertical-align: middle; font-size: 11px; }"
-                        + ".demoras-row td { padding: 3px 8px; background: #f5f5f5; "
-                        + "  border-bottom: 1px solid #ddd; }"
-
-                        // Panel derecho: charts
-                        + ".chart-section { margin-bottom: 20px; }"
-                        + ".chart-title { font-weight: bold; font-size: 13px; text-align: center; "
-                        + "  margin-bottom: 4px; }"
-                        + ".chart-total { text-align: center; font-size: 22px; font-weight: bold; "
-                        + "  margin-bottom: 10px; }"
-
-                        // Barras horizontales movimientos
-                        + ".bar-chart { padding: 0 10px; }"
-                        + ".bar-row { display: flex; align-items: center; margin-bottom: 8px; }"
-                        + ".bar-label { min-width: 50px; font-weight: bold; font-size: 10px; }"
-                        + ".bar-track { flex: 1; background: #ddd; border-radius: 3px; height: 24px; }"
-                        + ".bar-fill { background: " + AZUL_MEDIO + "; height: 100%; border-radius: 3px; "
-                        + "  display: flex; align-items: center; justify-content: flex-end; "
-                        + "  padding-right: 6px; }"
-                        + ".bar-value { color: white; font-weight: bold; font-size: 11px; }"
-
-                        // Barras de demoras
-                        + ".demoras-chart { padding: 0 10px; }"
-                        + ".demora-row { display: flex; align-items: center; margin-bottom: 10px; gap: 8px; }"
-                        + ".demora-label { min-width: 120px; font-size: 10px; text-align: right; }"
-                        + ".demora-track { flex: 1; background: #eee; border-radius: 3px; height: 20px; }"
-                        + ".demora-bar { height: 100%; border-radius: 3px; }"
-                        + ".demora-hrs { min-width: 55px; font-size: 10px; font-weight: bold; }"
-                        + ".badge-pct { color: white; padding: 2px 6px; border-radius: 3px; "
-                        + "  font-weight: bold; font-size: 10px; min-width: 35px; text-align: center; }";
-    }
-
-    // ==========================================================
-    // CONVERSIÓN HTML → PDF
+    // CONVERSIÓN HTML → PDF  (hoja horizontal A4)
     // ==========================================================
     private void convertirHtmlAPdf(String html, String rutaSalida) {
         try {
-            // Crear carpeta si no existe
             File carpeta = new File(rutaSalida).getParentFile();
             if (carpeta != null && !carpeta.exists()) carpeta.mkdirs();
 
+            // PageSize.A4.rotate() = A4 apaisado (842 x 595 pts)
+            PdfWriter   writer  = new PdfWriter(rutaSalida);
+            PdfDocument pdfDoc  = new PdfDocument(writer);
+            pdfDoc.setDefaultPageSize(PageSize.A4.rotate());
+
             ConverterProperties props = new ConverterProperties();
 
-            try (OutputStream os = new FileOutputStream(rutaSalida)) {
-                HtmlConverter.convertToPdf(html, os, props);
+            try (InputStream is = new ByteArrayInputStream(
+                    html.getBytes(StandardCharsets.UTF_8))) {
+                HtmlConverter.convertToPdf(is, pdfDoc, props);
             }
+
         } catch (Exception e) {
             throw new RuntimeException("Error generando PDF: " + e.getMessage(), e);
         }
@@ -474,24 +408,18 @@ public class PaginaIndicadores {
     // ==========================================================
     // UTILIDADES
     // ==========================================================
-    private String str(Map<String, Object> map, String key) {
-        Object v = map.get(key);
-        return v != null ? v.toString() : "";
+    private String str(Map<String, Object> m, String k) {
+        Object v = m.get(k); return v != null ? v.toString() : "";
     }
-
-    private double dbl(Map<String, Object> map, String key) {
-        Object v = map.get(key);
-        if (v instanceof Number) return ((Number) v).doubleValue();
-        return 0.0;
+    private double dbl(Map<String, Object> m, String k) {
+        Object v = m.get(k);
+        return v instanceof Number ? ((Number) v).doubleValue() : 0.0;
     }
-
-    private int integer(Map<String, Object> map, String key) {
-        Object v = map.get(key);
-        if (v instanceof Number) return ((Number) v).intValue();
-        return 0;
+    private int integer(Map<String, Object> m, String k) {
+        Object v = m.get(k);
+        return v instanceof Number ? ((Number) v).intValue() : 0;
     }
-
-    private String fmt2(double v) {
+    private String fmt(double v) {
         return String.format(Locale.ROOT, "%.2f", v);
     }
 }

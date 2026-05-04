@@ -6,6 +6,7 @@ public class ExcelNavesPostMortem {
     private int colVisita, colLinea, colServicio;
     private int colInicioOperaciones, colFinOperaciones;
     private int colBerthATA, colBerthATD;
+    private int colNombreNave;
 
     private final String keyColInicio = "Start Work";
     private final String keyColFin = "End Work";
@@ -14,6 +15,7 @@ public class ExcelNavesPostMortem {
     private final String keyColServicio = "Service";
     private final String keyColBerthATA = "ATA";
     private final String keyColBerthATD = "ATD";
+    private final String keyNombreNave = "Vessel Name";
 
     public ExcelNavesPostMortem(String rutaExcel) {
         this.rutaExcel = rutaExcel;
@@ -27,6 +29,7 @@ public class ExcelNavesPostMortem {
     public String getRutaExcel()      { return rutaExcel; }
     public String getKeyColBerthATA() {return keyColBerthATA;}
     public String getKeyColBerthATD() {return keyColBerthATD;}
+    public String getKeyColNombreNave(){return this.keyNombreNave;}
 
     public int getColVisita()              { return colVisita; }
     public void setColVisita(int v)        { this.colVisita = v; }
@@ -49,6 +52,9 @@ public class ExcelNavesPostMortem {
     public int getColBerthATD(){return  this.colBerthATD;}
     public void setColBerthATD(int v){this.colBerthATD = v;}
 
+    public int getColNombreNave(){return this.colNombreNave;}
+    public void setColNombreNave(int v){this.colNombreNave = v;}
+
     // ── POJO por fila de nave ────────────────────────────────
     public static class DatosNave {
         public final String visita;
@@ -58,11 +64,11 @@ public class ExcelNavesPostMortem {
         public final String finOperaciones;
         public final String berthATA;
         public final String berthATD;
-
+        public final String nombreNave;
 
         public DatosNave(String visita, String linea, String servicio,
                          String inicioOperaciones, String finOperaciones,
-                         String berthATA, String berthATD) {
+                         String berthATA, String berthATD, String nombreNave) {
             this.visita             = visita;
             this.linea              = linea;
             this.servicio           = servicio;
@@ -70,6 +76,7 @@ public class ExcelNavesPostMortem {
             this.finOperaciones     = finOperaciones;
             this.berthATA = berthATA;
             this.berthATD = berthATD;
+            this.nombreNave = nombreNave;
         }
 
         public String getVisita() {
@@ -96,6 +103,7 @@ public class ExcelNavesPostMortem {
 
         public String getBerthATD(){return berthATD;}
 
+        public String getNombreNave(){return this.nombreNave;}
 
         @Override
         public String toString() {

@@ -39,10 +39,11 @@ public class LecturaNaves {
                 String fin = getCellFecha (row.getCell(excelNaves.getColFinOperaciones()));
                 String berthATA = getCellFecha(row.getCell(excelNaves.getColBerthATA()));
                 String berthATD = getCellFecha(row.getCell(excelNaves.getColBerthATD()));
+                String nombreNave = getCellString(row.getCell(excelNaves.getColNombreNave()));
 
                 if (visita.isEmpty() && linea.isEmpty() && servicio.isEmpty()) continue;
 
-                resultado.add(new DatosNave(visita, linea, servicio, inicio, fin, berthATA, berthATD));
+                resultado.add(new DatosNave(visita, linea, servicio, inicio, fin, berthATA, berthATD,nombreNave));
             }
 
             wb.close();
@@ -92,6 +93,9 @@ public class LecturaNaves {
                 case "ATD":
                     encontradas.put(excelNaves.getKeyColBerthATD(), cell.getColumnIndex());
                     break;
+                case "Vessel Name":
+                    encontradas.put(excelNaves.getKeyColNombreNave(), cell.getColumnIndex());
+                    break;
             }
         }
 
@@ -104,6 +108,7 @@ public class LecturaNaves {
         validarColumna(encontradas, excelNaves.getKeyColFin());
         validarColumna(encontradas, excelNaves.getKeyColBerthATA());
         validarColumna(encontradas, excelNaves.getKeyColBerthATD());
+        validarColumna(encontradas, excelNaves.getKeyColNombreNave());
 
         excelNaves.setColVisita(encontradas.get(excelNaves.getKeyColVisita()));
         excelNaves.setColLinea(encontradas.get(excelNaves.getKeyColLinea()));
@@ -112,6 +117,7 @@ public class LecturaNaves {
         excelNaves.setColFinOperaciones(encontradas.get(excelNaves.getKeyColFin()));
         excelNaves.setColBerthATA(encontradas.get(excelNaves.getKeyColBerthATA()));
         excelNaves.setColBerthATD(encontradas.get(excelNaves.getKeyColBerthATD()));
+        excelNaves.setColNombreNave(encontradas.get(excelNaves.getKeyColNombreNave()));
 
         System.out.println("[Columnas] Visit=" + excelNaves.getColVisita()
                 + " | Line="+ excelNaves.getColLinea()

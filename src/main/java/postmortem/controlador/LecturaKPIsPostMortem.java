@@ -60,6 +60,7 @@ public class LecturaKPIsPostMortem {
             double bmph  = extraerBMPHPorVisita(totalMovimientos, duracionBerth);
             double craneIntensity = extraerCraneIntensity(dataFiltrada, duracionOperacion);
 
+
             Map<String, Integer> detalleMovimientos = extraerDetalleMovmientos(dataFiltrada);
 
             List<Map<String, Object>> tablaGruas = extraerTablaGruas(dataFiltrada);
@@ -68,6 +69,7 @@ public class LecturaKPIsPostMortem {
 
             Map<String, Object> tabla = new HashMap<>();
             tabla.put("Visita", visita);
+            tabla.put("NombreNave", "BOX ENDURANCE");
             tabla.put("Linea", nave.getLinea());
             tabla.put("Servicio", nave.getServicio());
             tabla.put("BerthATA", nave.getBerthATA());
