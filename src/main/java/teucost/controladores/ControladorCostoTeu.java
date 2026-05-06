@@ -102,18 +102,7 @@ public class ControladorCostoTeu {
     private final int colCostoNaveOperativo = 44;
     private final int colCostoTeu = 45;
 
-    // =========================================================
-    //  COLUMNAS DE LA TABLA DESTINO (1-based)
-    //  MES | NOMBRE NAVE | VISITA | LINEA | FECHA FIN | SEMANA
-    //  | CUADRILLAS | MOV CONT | TEUS | MUELLE | TIEMPO EFECT
-    //  | COSTO ESTIBA | COSTO RTG
-    // =========================================================
-
     private EscritorDetalleNave escritorDetalle;
-
-    // =========================================================
-    //  CONSTRUCTORES
-    // =========================================================
 
     public ControladorCostoTeu(
             String rutaThroughput,
@@ -132,14 +121,6 @@ public class ControladorCostoTeu {
         this.rutaExcelResumen = rutaExcelResumen;
     }
 
-    // =========================================================
-    //  EXTRACCIÓN DE DATOS — un solo nroVisita
-    // =========================================================
-
-    /**
-     * Extrae todos los datos necesarios para una visita y los encapsula
-     * en un HashMap listo para escribir en la tabla destino.
-     */
     public HashMap<String, Object> extraerDatosCostos(String nroVisita) {
         HashMap<String, Object> datos = new HashMap<>();
         try {
@@ -165,6 +146,7 @@ public class ControladorCostoTeu {
             String nroSemana        = resumenCosmos.getOrDefault("semana",           "");
             String tiempoEfectivo   = resumenCosmos.getOrDefault("tiempoEfectivo",   "0");
 
+            System.out.println("Resumen naves Abril : "+resumenCosmos.toString());
             // --- Conciliado: muelle ---
             LecturaConciliado lecturaConciliado = new LecturaConciliado(this.rutaConciliado);
             String muelle = lecturaConciliado.extraerMuelleNave(nroVisita);

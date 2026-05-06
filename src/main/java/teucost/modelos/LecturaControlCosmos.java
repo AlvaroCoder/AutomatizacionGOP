@@ -26,22 +26,20 @@ public class LecturaControlCosmos {
         this.rutaControlCosmos = rutaControlCosmos;
     }
 
-    // ✅ Bug 2 corregido: retorna HashMap<String, String> en lugar de HashMap<String, Integer>
     public HashMap<String, String> extraerResumenNaveCuad() {
-        // ✅ Bug 1 corregido: inicializar el mapa, no dejarlo null
         HashMap<String, String> jsonResumenNave = new HashMap<>();
         LecturaExcels excelCosmos = null;
 
         try {
             excelCosmos = new LecturaExcels(this.rutaControlCosmos);
             List<String> columnaVisitas = excelCosmos.leerColumna(nombreHojaCosmos, colNroVisita);
-
-            for (int i = 2; i < columnaVisitas.size(); i++) {
+            for (int i = 1; i < columnaVisitas.size(); i++) {
                 String visitaNave = columnaVisitas.get(i).trim();
                 if (visitaNave.isEmpty()) continue;
 
                 if (visitaNave.equals(nroVisita)) {
                     String nombreVisita  = excelCosmos.leerCelda(nombreHojaCosmos, i, colNombreVisita);
+
                     String lineaServicio = excelCosmos.leerCelda(nombreHojaCosmos, i, colLineaVisita)
                             + "-" + excelCosmos.leerCelda(nombreHojaCosmos, i, colServicioVisita);
                     String cuadrillas = excelCosmos.leerCelda(nombreHojaCosmos, i, colCuadrillaVisita);

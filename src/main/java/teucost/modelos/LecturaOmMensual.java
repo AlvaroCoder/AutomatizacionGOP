@@ -20,8 +20,6 @@ public class LecturaOmMensual {
     private final int filaCostoUnitGalon = 96;
     private final int filaCostoGMGalonHora = 91;
 
-    private final int filaRNombre = 25;
-
     private final int filaCosto28 = 27;
     private final int filaCosto39 = 38;
     private final int filaCosto48 = 47;
