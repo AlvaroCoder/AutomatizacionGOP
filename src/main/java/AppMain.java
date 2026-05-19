@@ -478,7 +478,7 @@ class DeckFrame extends JFrame {
             controlador.setNombreHojaCosmos(hojaCosmos);
             controlador.setNombreHojaMoveHistory(hojaMoveHistory);
             controlador.setNumMesOM(numMes);
-            controlador.escribirVariasVisitasEnTabla(listaNaves);
+           // controlador.escribirVariasVisitasEnTabla(listaNaves);
         });
     }
 

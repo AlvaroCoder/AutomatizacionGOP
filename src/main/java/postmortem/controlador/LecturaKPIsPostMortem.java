@@ -22,9 +22,6 @@ public class LecturaKPIsPostMortem {
         this.excelMoveHistory = lecturaMoveHistory.extraerDatosMoveHistory();
     }
 
-    // ==========================================================
-    // PUNTO DE ENTRADA
-    // ==========================================================
     public List<Map<String, Object>> calcularKpis() {
         return extraerIndicadoresTabla(extraerVisitas());
     }
@@ -37,9 +34,6 @@ public class LecturaKPIsPostMortem {
         return visitas;
     }
 
-    // ==========================================================
-    // TABLA DE INDICADORES POR VISITA
-    // ==========================================================
     private List<Map<String, Object>> extraerIndicadoresTabla(List<String> visitas) {
         List<Map<String, Object>> indicadores = new ArrayList<>();
 

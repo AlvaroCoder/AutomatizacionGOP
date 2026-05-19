@@ -1,4 +1,4 @@
-package teucost.modelos;
+package teucost.modelos.excels;
 
 public class ExcelDatosNave {
     private String rutaExcel;
@@ -8,7 +8,7 @@ public class ExcelDatosNave {
     private final String keyColService = "Service";
     private final String keyColStartWork = "Start Work";
     private final String keyColEndWork = "End Work";
-    private final String keyColCuadrillas = "Cuadrillas";
+    private final String keyColCuadrillas = "CUADRILLAS";
     private final String keyColVisit = "Visit";
 
     private int colVesselName;
@@ -77,6 +77,38 @@ public class ExcelDatosNave {
 
     public int getColCuadrillas() {
         return colCuadrillas;
+    }
+
+    public void setRutaExcel(String rutaExcel) {
+        this.rutaExcel = rutaExcel;
+    }
+
+    public void setColVesselName(int colVesselName) {
+        this.colVesselName = colVesselName;
+    }
+
+    public void setColLine(int colLine) {
+        this.colLine = colLine;
+    }
+
+    public void setColService(int colService) {
+        this.colService = colService;
+    }
+
+    public void setColVisit(int colVisit) {
+        this.colVisit = colVisit;
+    }
+
+    public void setColStartWork(int colStartWork) {
+        this.colStartWork = colStartWork;
+    }
+
+    public void setColEndWork(int colEndWork) {
+        this.colEndWork = colEndWork;
+    }
+
+    public void setColCuadrillas(int colCuadrillas) {
+        this.colCuadrillas = colCuadrillas;
     }
 
     public static class DatosNave{

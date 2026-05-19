@@ -1,7 +1,7 @@
 package teucost.controladores;
 
-
 import teucost.modelos.*;
+import teucost.modelos.excels.ExcelDatosNave;
 import org.apache.poi.ss.usermodel.Row;
 
 import java.time.LocalDateTime;
@@ -10,99 +10,101 @@ import java.util.*;
 
 public class ControladorCostoTeu {
 
-    private String nroVisita;
-
-    private String rutaExcelResumen;
-    private String rutaNavesMes;
-
-    // Filas y columnas del Excel de Naves por mes de cada año
-    private final int filaCuadrillas     = 24;
-    private final int colCuadrillas      = 2;
-    private int colResumenCuadrillas     = 10;
-    private String nombreHojaExcelResumen = "Resumen Visitas Feb 26";
-    private String nombreHojaCosmos     = "";
-    private int colVisitaExcelResumen    = 1;
-    private int numMesOM                = 0;
-    private String nombreHojaMoveHistory = "MoveEvent";
-
-    private double costoDepreciacionSTS = 56.14;
-    private double costoDepreciacionGM = 45.54;
+    // =========================================================
+    //  TASAS DE DEPRECIACIÓN ($/hr por equipo)
+    // =========================================================
+    private double costoDepreciacionSTS  = 56.14;
+    private double costoDepreciacionGM   = 45.54;
     private double costoDepreciacionERTG = 15.42;
-    private double costoDepreciacionRTG = 9.21;
-    private double costoDepreciacionITV = 0.65;
-    private double costoDepreciacionRSK = 2.14;
-    private double costoDepreciacionEH = 1.49;
+    private double costoDepreciacionRTG  = 9.21;
+    private double costoDepreciacionITV  = 0.65;
+    private double costoDepreciacionRSK  = 2.14;
+    private double costoDepreciacionEH   = 1.49;
+    private double promedioVueltasITV    = 7;
 
-    private double promedioVueltasITV = 7;
-
-    // Bancos de datos
+    // =========================================================
+    //  RUTAS DE FUENTES DE DATOS
+    // =========================================================
     private String rutaThroughput;
     private String rutaControlCosmos;
     private String rutaConciliado;
     private String rutaOMMensual;
     private String rutaMoveHistory;
-
-    // Excel Destino
     private String rutaExcelDestino;
-
-    // Índice de hoja destino (0-based)
-    private final int hojaDestinoCostos = 0;
-    private final int hojaDestinoNave = 1;
+    private String rutaExcelResumen;
+    private String rutaNavesMes;
 
     // =========================================================
-    //  COLUMNAS DE LA TABLA DESTINO (0-based)
-    //  MES | NOMBRE NAVE | VISITA | LINEA | FECHA FIN | SEMANA
-    //  | CUADRILLAS | MOV CONT | TEUS | MUELLE | TIEMPO EFECT
-    //  | COSTO ESTIBA | COSTO RTG
+    //  CONFIGURACIÓN DE HOJAS
     // =========================================================
-    private final int colMes            = 0;
-    private final int colNombreNave     = 1;
-    private final int colVisitaTabla    = 2;
-    private final int colLinea          = 3;
-    private final int colFechaFin       = 4;
-    private final int colSemana         = 5;
-    private final int colCuadrillasTabla= 6;
-    private final int colMovCont        = 7;
-    private final int colTeus           = 8;
-    private final int colMuelle         = 9;
-    private final int colTiempoEfectivo = 10;
-    private final int colCostoEstiba    = 11;
-    private final int colCostoRTG       = 12;
-    private final int colCostoReachStack = 13;
-    private final int colCostoEmptyHand = 14;
-    private final int colCostoGruaMov   = 15;
-    private final int colCostoITV       = 16;
-    private final int colSubtotalCosto  = 17;
-    private final int colCostoSTS01     = 18;
-    private final int colCostoSTS02     = 19;
-    private final int colCostoSTS03     = 20;
-    private final int colCostoRTG05     = 21;
-    private final int colCostoRTG06     = 22;
+    private String nombreHojaCosmos      = "Resumen Visitas Feb 26";
+    private String nombreHojaMoveHistory = "MoveEvent";
+    private String nombreHojaExcelResumen= "Resumen Visitas Feb 26";
+    private int    numMesOM              = 0;
+
+    // =========================================================
+    //  CONFIGURACIÓN TABLA DESTINO — hoja 0 (0-based)
+    // =========================================================
+    private final int hojaDestinoCostos      = 0;
+    private final int colMes                 = 0;
+    private final int colNombreNave          = 1;
+    private final int colVisitaTabla         = 2;
+    private final int colLinea               = 3;
+    private final int colFechaFin            = 4;
+    private final int colSemana              = 5;
+    private final int colCuadrillasTabla     = 6;
+    private final int colMovCont             = 7;
+    private final int colTeus                = 8;
+    private final int colMuelle              = 9;
+    private final int colTiempoEfectivo      = 10;
+    private final int colCostoEstiba         = 11;
+    private final int colCostoRTG            = 12;
+    private final int colCostoReachStack     = 13;
+    private final int colCostoEmptyHand      = 14;
+    private final int colCostoGruaMov        = 15;
+    private final int colCostoITV            = 16;
+    private final int colSubtotalCosto       = 17;
+    private final int colCostoSTS01          = 18;
+    private final int colCostoSTS02          = 19;
+    private final int colCostoSTS03          = 20;
+    private final int colCostoRTG05          = 21;
+    private final int colCostoRTG06          = 22;
     private final int colCostoSubtotalSTSRTG = 23;
-    private final int colCostoDeprecSTS01 = 24;
-    private final int colCostoDeprecSTS02 = 25;
-    private final int colCostoDeprecSTS03 = 26;
-    private final int colCostoDeprecGM01 = 27;
-    private final int colCostoDeprecGM02 = 28;
-    private final int colCostoDeprecRTG05 = 29;
-    private final int colCostoDeprecRTG06 = 30;
-    private final int colCostoDeprecRTG01 = 31;
-    private final int colCostoDeprecRTG02 = 32;
-    private final int colCostoDeprecRTG03 = 33;
-    private final int colCostoDeprecRTG04 = 34;
-    private final int colCostoDeprecS501 = 35;
-    private final int colCostoDeprecS502 = 36;
-    private final int colCostoDeprecS503 = 37;
-    private final int colCostoDeprecS506 = 38;
-    private final int colCostoDeprecS504 = 39;
-    private final int colCostoDeprecS505 = 40;
-    private final int colCostoDeprecS507 = 41;
-    private final int colCostoDeprecTT = 42;
-    private final int colCostoDepreciacion = 43;
-    private final int colCostoNaveOperativo = 44;
-    private final int colCostoTeu = 45;
+    private final int colCostoDeprecSTS01    = 24;
+    private final int colCostoDeprecSTS02    = 25;
+    private final int colCostoDeprecSTS03    = 26;
+    private final int colCostoDeprecGM01     = 27;
+    private final int colCostoDeprecGM02     = 28;
+    private final int colCostoDeprecRTG05    = 29;
+    private final int colCostoDeprecRTG06    = 30;
+    private final int colCostoDeprecRTG01    = 31;
+    private final int colCostoDeprecRTG02    = 32;
+    private final int colCostoDeprecRTG03    = 33;
+    private final int colCostoDeprecRTG04    = 34;
+    private final int colCostoDeprecS501     = 35;
+    private final int colCostoDeprecS502     = 36;
+    private final int colCostoDeprecS503     = 37;
+    private final int colCostoDeprecS506     = 38;
+    private final int colCostoDeprecS504     = 39;
+    private final int colCostoDeprecS505     = 40;
+    private final int colCostoDeprecS507     = 41;
+    private final int colCostoDeprecTT       = 42;
+    private final int colCostoDepreciacion   = 43;
+    private final int colCostoNaveOperativo  = 44;
+    private final int colCostoTeu            = 45;
 
+    // Copiar cuadrillas
+    private int    colResumenCuadrillas  = 10;
+    private int    colVisitaExcelResumen = 1;
+    private final int filaCuadrillas     = 24;
+    private final int colCuadrillas      = 2;
+
+    // Escritor de hoja de detalle
     private EscritorDetalleNave escritorDetalle;
+
+    // =========================================================
+    //  CONSTRUCTORES
+    // =========================================================
 
     public ControladorCostoTeu(
             String rutaThroughput,
@@ -121,674 +123,549 @@ public class ControladorCostoTeu {
         this.rutaExcelResumen = rutaExcelResumen;
     }
 
-    public HashMap<String, Object> extraerDatosCostos(String nroVisita) {
-        HashMap<String, Object> datos = new HashMap<>();
-        try {
-            System.out.println("\n[INFO] ═══ Procesando visita: " + nroVisita + " ═══");
-
-            // --- Throughput: movimientos y TEUs ---
-            LecturaThroughput lecturaThroughput = new LecturaThroughput(this.rutaThroughput);
-            lecturaThroughput.setNombreHoja("Flash Report");
-            lecturaThroughput.setNroVisita(nroVisita);
-            HashMap<String, Integer> resumenMovTeus = lecturaThroughput.extraerResumenMovTeus();
-            int sumaMovCont = resumenMovTeus.get("sumaMovContenedores");
-            int sumaTeus    = resumenMovTeus.get("sumaTeus");
-
-            // --- Control Cosmos: datos generales de la nave ---
-            LecturaControlCosmos lecturaControlCosmos = new LecturaControlCosmos(this.rutaControlCosmos);
-            lecturaControlCosmos.setNombreHojaCosmos(nombreHojaCosmos);
-            lecturaControlCosmos.setNroVisita(nroVisita);
-            HashMap<String, String> resumenCosmos = lecturaControlCosmos.extraerResumenNaveCuad();
-            String nombreVisita     = resumenCosmos.getOrDefault("nombreVisita",     "");
-            String lineaServicio    = resumenCosmos.getOrDefault("lineaServicio",    "");
-            String cuadrilla        = resumenCosmos.getOrDefault("cuadrillas",       "0");
-            String fechaFinalizacion= resumenCosmos.getOrDefault("fechaFinalizacion","");
-            String nroSemana        = resumenCosmos.getOrDefault("semana",           "");
-            String tiempoEfectivo   = resumenCosmos.getOrDefault("tiempoEfectivo",   "0");
-
-            System.out.println("Resumen naves Abril : "+resumenCosmos.toString());
-            // --- Conciliado: muelle ---
-            LecturaConciliado lecturaConciliado = new LecturaConciliado(this.rutaConciliado);
-            String muelle = lecturaConciliado.extraerMuelleNave(nroVisita);
-
-            // --- OM Mensual: costos ---
-            LecturaOmMensual lecturaOmMensual = new LecturaOmMensual(this.rutaOMMensual);
-            lecturaOmMensual.setNumMes(numMesOM > 0 ? numMesOM : extraerNumeroMesDesdeFecha(fechaFinalizacion));
-            lecturaOmMensual.setNombreHojaOMDiesel("Fuel26");
-            lecturaOmMensual.setNombreHojaEnergia("WS-Energy");
-            lecturaOmMensual.setNombreHojaEstibas("Stevedoring26");
-
-            double costoEstiba        = lecturaOmMensual.extraerCostoEstiba();
-            double totalCostoEstiba   = costoEstiba * parsearDouble(cuadrilla);
-            HashMap<String, Double> costosDiesel = lecturaOmMensual.extraerResumenCostosDiesel();
-            double costoPorMovRTG     = costosDiesel.getOrDefault("costoPorMovRTG", 0.0);
-            double costoPorMovStacker = costosDiesel.getOrDefault("costoPorMovSTK", 0.0);
-            double costoPorMovEH      = costosDiesel.getOrDefault("costoPorMovEH", 0.0);
-            double costoGMGalonHora   = costosDiesel.getOrDefault("costoGMGalonHora", 0.0);
-            double costoTTHora        = costosDiesel.getOrDefault("costoPorMovTT", 0.0);
-            double costoUnitGalon     = costosDiesel.getOrDefault("costoUnitGalon", 0.0);
-
-            // Costo ITV
-
-            // --- MoveHistory: movimientos RTG ---
-            LecturaMoveHistory lecturaMoveHistory = new LecturaMoveHistory(this.rutaMoveHistory);
-            lecturaMoveHistory.setNombreHojaMoveHistory(nombreHojaMoveHistory);
-            lecturaMoveHistory.setNroVisita(nroVisita);
-            lecturaMoveHistory.cargarDatos();
-
-            int movimientosRTG  = lecturaMoveHistory.extraerMovimientosRTG();
-            double costoTotalRTG = movimientosRTG * costoPorMovRTG;
-
-            int movimientosReachStacker = lecturaMoveHistory.extraerMovimientosStacker();
-            double costoTotalReachStacker = movimientosReachStacker * costoPorMovStacker;
-
-            int movimientosEmptyHandler = lecturaMoveHistory.extraerMovimientosEmptyHand();
-            double costoTotalEmptyHandler = movimientosEmptyHandler * costoPorMovEH;
-
-            Map<String, Double> duracionGruas = lecturaMoveHistory.extraerResumenDuracionGruas();
-
-            double duracionSTS01 = duracionGruas.getOrDefault("STS01", 0.0);
-            double duracionSTS02 = duracionGruas.getOrDefault("STS02", 0.0);
-            double duracionSTS03 = duracionGruas.getOrDefault("STS03", 0.0);
-            double duracionGM01 = duracionGruas.getOrDefault("GM01", 0.0);
-            double duracionGM02 = duracionGruas.getOrDefault("GM02", 0.0);
-            double duracionRTG01 = duracionGruas.getOrDefault("RTG01", 0.0);
-            double duracionRTG02 = duracionGruas.getOrDefault("RTG02", 0.0);
-            double duracionRTG03 = duracionGruas.getOrDefault("RTG03", 0.0);
-            double duracionRTG04 = duracionGruas.getOrDefault("RTG04", 0.0);
-            double duracionRTG05 = duracionGruas.getOrDefault("RTG05", 0.0);
-            double duracionRTG06 = duracionGruas.getOrDefault("RTG06", 0.0);
-            double duracionS501 = duracionGruas.getOrDefault("S-501", 0.0);
-            double duracionS502 = duracionGruas.getOrDefault("S-502", 0.0);
-            double duracionS503 = duracionGruas.getOrDefault("S-503", 0.0);
-            double duracionS504 = duracionGruas.getOrDefault("S-504", 0.0);
-            double duracionS505 = duracionGruas.getOrDefault("S-505", 0.0);
-            double duracionS506 = duracionGruas.getOrDefault("S-506", 0.0);
-            double duracionS507 = duracionGruas.getOrDefault("S-507", 0.0);
-
-            double duracionGruaMovil = duracionGM01 + duracionGM02;
-
-            double costoTotalGruaMovil = duracionGruaMovil * costoGMGalonHora;
-
-            long gruasGMActivas = duracionGruas.entrySet().stream()
-                    .filter(e -> e.getKey().startsWith("GM") && e.getValue() > 0.0)
-                    .count();
-
-            long gruasSTSActivas = duracionGruas.entrySet().stream()
-                    .filter(e -> e.getKey().startsWith("STS") && e.getValue() > 0.0)
-                    .count();
-
-            double galonesITVHora = parsearDouble(tiempoEfectivo) * costoTTHora;
-            double ITVAsignados = gruasGMActivas * 4 + gruasSTSActivas * 5;
-            double costoTotalITV = ITVAsignados * galonesITVHora * costoUnitGalon;
-
-            HashMap<String, Double> costosElectricos = lecturaOmMensual.extraerResumenCostosEnergia();
-            double costoSTS01 = costosElectricos.getOrDefault("costoEnergiaSTS01", 0.0);
-            double costoSTS02 = costosElectricos.getOrDefault("costoEnergiaSTS02",0.0);
-            double costoSTS03 = costosElectricos.getOrDefault("costoEnergiaSTS03",0.0);
-
-            double costoTotalSTS01 = costoSTS01 * duracionSTS01;
-            double costoTotalSTS02 = costoSTS02 * duracionSTS02;
-            double costoTotalSTS03 = costoSTS03 * duracionSTS03;
-
-            double costoERTG05 = costosElectricos.getOrDefault("costoEnergiaRTG05",0.0);
-            double costoERTG06 = costosElectricos.getOrDefault("costoEnergiaRTG06",0.0);
-            double costoTotalERTG05 = costoERTG05 * duracionGruas.getOrDefault("RTG05",0.0);
-            double costoTotalERTG06 = costoERTG06 * duracionGruas.getOrDefault("RTG06", 0.0);
-
-            double subtotalCostoSTSERTG =
-                    costoTotalSTS01 + costoTotalSTS02 + costoTotalSTS03
-                            + costoTotalERTG05 + costoTotalERTG06;
-
-            // Depreciaciones
-            double costoDepreciacionSTS01 = duracionSTS01 * costoDepreciacionSTS;
-            double costoDepreciacionSTS02 = duracionSTS02 * costoDepreciacionSTS;
-            double costoDepreciacionSTS03 = duracionSTS03 * costoDepreciacionSTS;
-            double costoDepreciacionGM01  = duracionGM01 * costoDepreciacionGM;
-            double costoDepreciacionGM02  = duracionGM02 * costoDepreciacionGM;
-            double costoDepreciacionRTG01 = duracionRTG01 * costoDepreciacionRTG;
-            double costoDepreciacionRTG02 = duracionRTG02 * costoDepreciacionRTG;
-            double costoDepreciacionRTG03 = duracionRTG03 * costoDepreciacionRTG;
-            double costoDepreciacionRTG04 = duracionRTG04 * costoDepreciacionRTG;
-            double costoDepreciacionRTG05 = duracionRTG05 * costoDepreciacionERTG;
-            double costoDepreciacionRTG06 = duracionRTG06 * costoDepreciacionERTG;
-            double costoDepreciacionS501 = duracionS501 * costoDepreciacionRSK;
-            double costoDepreciacionS502 = duracionS502 * costoDepreciacionRSK;
-            double costoDepreciacionS503 = duracionS503 * costoDepreciacionRSK;
-            double costoDepreciacionS506 = duracionS506 * costoDepreciacionRSK;
-            double costoDepreciacionS504 = duracionS504 * costoDepreciacionEH;
-            double costoDepreciacionS505 = duracionS505 * costoDepreciacionEH;
-            double costoDepreciacionS507 = duracionS507 * costoDepreciacionEH;
-            double costoDepreciacionTT = ITVAsignados * promedioVueltasITV * costoDepreciacionITV;
-
-            double sumaCostoDepreciacion =
-                    costoDepreciacionSTS01 + costoDepreciacionSTS02 + costoDepreciacionSTS03
-                            + costoDepreciacionGM01 + costoDepreciacionGM02  // ← corregido
-                            + costoDepreciacionRTG01 + costoDepreciacionRTG02 + costoDepreciacionRTG03 + costoDepreciacionRTG04
-                            + costoDepreciacionRTG05 + costoDepreciacionRTG06
-                            + costoDepreciacionS501 + costoDepreciacionS502 + costoDepreciacionS503 + costoDepreciacionS506
-                            + costoDepreciacionS504 + costoDepreciacionS505 + costoDepreciacionS507
-                            + costoDepreciacionTT;
-
-            double subtotalCosto =
-                    costoTotalITV +
-                            costoTotalRTG +
-                            costoTotalEmptyHandler +
-                            costoTotalReachStacker +
-                            costoTotalGruaMovil;
-
-            double sumaCostoNaveOperativo = totalCostoEstiba + subtotalCosto + subtotalCostoSTSERTG + sumaCostoDepreciacion;
-            double costoPorTeu = sumaTeus > 0 ? sumaCostoNaveOperativo / sumaTeus : 0.0;
-
-            // --- Extraer mes desde fechaFinalizacion (ej: "28-Feb-26 17:43" → "FEB") ---
-            String mes = extraerMesDesdeFecha(fechaFinalizacion);
-
-            // --- Empaquetar todos los datos ---
-            datos.put("mes",             mes);
-            datos.put("nombreVisita",    nombreVisita);
-            datos.put("nroVisita",       nroVisita);
-            datos.put("lineaServicio",   lineaServicio);
-            datos.put("fechaFin",        fechaFinalizacion);
-            datos.put("semana",          nroSemana);
-            datos.put("cuadrillas",      parsearDouble(cuadrilla));
-            datos.put("movCont",         (double) sumaMovCont);
-            datos.put("teus",            (double) sumaTeus);
-            datos.put("muelle",          muelle);
-            datos.put("tiempoEfectivo",  parsearDouble(tiempoEfectivo));
-            datos.put("costoEstiba",     totalCostoEstiba);
-            datos.put("costoRTG",        costoTotalRTG);
-            datos.put("costoReactStacker", costoTotalReachStacker);
-            datos.put("costoEmptyHand", costoTotalEmptyHandler);
-            datos.put("costoTotalGruaMovil", costoTotalGruaMovil);
-            datos.put("costoTotalITV",   costoTotalITV);
-            datos.put("subtotalCosto",   subtotalCosto);
-            datos.put("costoTotalSTS01", costoTotalSTS01);
-            datos.put("costoTotalSTS02", costoTotalSTS02);
-            datos.put("costoTotalSTS03", costoTotalSTS03);
-            datos.put("costoTotalRTG05", costoTotalERTG05);
-            datos.put("costoTotalRTG06", costoTotalERTG06);
-            datos.put("costoSubtotalSTSRTG", subtotalCostoSTSERTG);
-            datos.put("costoDepreciacionSTS01", costoDepreciacionSTS01);
-            datos.put("costoDepreciacionSTS02", costoDepreciacionSTS02);
-            datos.put("costoDepreciacionSTS03", costoDepreciacionSTS03);
-            datos.put("costoDepreciacionGM01", costoDepreciacionGM01);
-            datos.put("costoDepreciacionGM02", costoDepreciacionGM02);
-            datos.put("costoDepreciacionRTG05", costoDepreciacionRTG05);
-            datos.put("costoDepreciacionRTG06", costoDepreciacionRTG06);
-            datos.put("costoDepreciacionRTG01", costoDepreciacionRTG01);
-            datos.put("costoDepreciacionRTG02", costoDepreciacionRTG02);
-            datos.put("costoDepreciacionRTG03", costoDepreciacionRTG03);
-            datos.put("costoDepreciacionRTG04", costoDepreciacionRTG04);
-            datos.put("costoDepreciacionS501", costoDepreciacionS501);
-            datos.put("costoDepreciacionS502", costoDepreciacionS502);
-            datos.put("costoDepreciacionS503", costoDepreciacionS503);
-            datos.put("costoDepreciacionS506", costoDepreciacionS506);
-            datos.put("costoDepreciacionS504", costoDepreciacionS504);
-            datos.put("costoDepreciacionS505", costoDepreciacionS505);
-            datos.put("costoDepreciacionS507", costoDepreciacionS507);
-            datos.put("costoDepreciacionTT", costoDepreciacionTT);
-            datos.put("subtotalCostoDepreciacion", sumaCostoDepreciacion);
-            datos.put("costoNaveOperativo", sumaCostoNaveOperativo);
-            datos.put("costoPorTeu", costoPorTeu);
-            datos.put("duracionRTG01", duracionRTG01);
-            datos.put("duracionRTG02", duracionRTG02);
-            datos.put("duracionRTG03", duracionRTG03);
-            datos.put("duracionRTG04", duracionRTG04);
-            datos.put("duracionRTG05", duracionRTG05);
-            datos.put("duracionRTG06", duracionRTG06);
-            datos.put("duracionSTS01", duracionSTS01);
-            datos.put("duracionSTS02", duracionSTS02);
-            datos.put("duracionSTS03", duracionSTS03);
-            datos.put("duracionS501", duracionS501);
-            datos.put("duracionS502", duracionS502);
-            datos.put("duracionS503", duracionS503);
-            datos.put("duracionS504", duracionS504);
-            datos.put("duracionS505", duracionS505);
-            datos.put("duracionS506", duracionS506);
-            datos.put("duracionS507", duracionS507);
-
-            datos.put("movimientosSTS01", lecturaMoveHistory.extraerMovimientosPorPrefijo("STS01").get("TOTAL_STS01"));
-            datos.put("movimientosSTS02", lecturaMoveHistory.extraerMovimientosPorPrefijo("STS02").get("TOTAL_STS02"));
-            datos.put("movimientosSTS03", lecturaMoveHistory.extraerMovimientosPorPrefijo("STS03").get("TOTAL_STS03"));
-            datos.put("movimientosRTG01", lecturaMoveHistory.extraerMovimientosPorPrefijo("RTG01").get("TOTAL_RTG01"));
-            datos.put("movimientosRTG02", lecturaMoveHistory.extraerMovimientosPorPrefijo("RTG02").get("TOTAL_RTG02"));
-            datos.put("movimientosRTG03", lecturaMoveHistory.extraerMovimientosPorPrefijo("RTG03").get("TOTAL_RTG03"));
-            datos.put("movimientosRTG04", lecturaMoveHistory.extraerMovimientosPorPrefijo("RTG04").get("TOTAL_RTG04"));
-            datos.put("movimientosRTG05", lecturaMoveHistory.extraerMovimientosPorPrefijo("RTG05").get("TOTAL_RTG05"));
-            datos.put("movimientosRTG06", lecturaMoveHistory.extraerMovimientosPorPrefijo("RTG06").get("TOTAL_RTG06"));
-            datos.put("movimientosS501", lecturaMoveHistory.extraerMovimientosPorPrefijo("S-501").get("TOTAL_S-501"));
-            datos.put("movimientosS502", lecturaMoveHistory.extraerMovimientosPorPrefijo("S-502").get("TOTAL_S-502"));
-            datos.put("movimientosS503", lecturaMoveHistory.extraerMovimientosPorPrefijo("S-503").get("TOTAL_S-503"));
-            datos.put("movimientosS504", lecturaMoveHistory.extraerMovimientosPorPrefijo("S-504").get("TOTAL_S-504"));
-            datos.put("movimientosS505", lecturaMoveHistory.extraerMovimientosPorPrefijo("S-505").get("TOTAL_S-505"));
-            datos.put("movimientosS506", lecturaMoveHistory.extraerMovimientosPorPrefijo("S-506").get("TOTAL_S-506"));
-            datos.put("movimientosS507", lecturaMoveHistory.extraerMovimientosPorPrefijo("S-507").get("TOTAL_S-507"));
-
-
-            System.out.println("[OK] Datos extraídos para visita: " + nroVisita);
-
-        } catch (Exception err) {
-            System.out.println("[ERROR] extraerDatosVisita (" + nroVisita + "): " + err.getMessage());
-            err.printStackTrace();
-        }
-
-        return datos;
-    }
-
-    private int extraerNumeroMesDesdeFecha(String fechaStr) {
-        try {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("d-MMM-yy HH:mm", Locale.ENGLISH);
-            LocalDateTime dt = LocalDateTime.parse(fechaStr.trim(), formatter);
-            return dt.getMonthValue();
-        } catch (Exception e) {
-            System.out.println("[WARN] No se pudo extraer número de mes de: '" + fechaStr + "'");
-            return -1;
-        }
-    }
-
-    public HashMap<String, Object> extraerDatosNave(String nroVisita){
-        HashMap<String, Object> datos = new HashMap<>();
-        try {
-            LecturaThroughput lecturaThroughput = new LecturaThroughput(this.rutaThroughput);
-            lecturaThroughput.setNombreHoja("Flash Report");
-            lecturaThroughput.setNroVisita(nroVisita);
-            HashMap<String, Integer> resumenMovTeus = lecturaThroughput.extraerResumenMovTeus();
-            int sumaMovCont = resumenMovTeus.get("sumaMovContenedores");
-            int sumaTeus    = resumenMovTeus.get("sumaTeus");
-
-            LecturaControlCosmos lecturaControlCosmos = new LecturaControlCosmos(this.rutaControlCosmos);
-            lecturaControlCosmos.setNroVisita(nroVisita);
-            HashMap<String, String> resumenCosmos = lecturaControlCosmos.extraerResumenNaveCuad();
-            String nombreVisita     = resumenCosmos.getOrDefault("nombreVisita",     "");
-            String lineaServicio    = resumenCosmos.getOrDefault("lineaServicio",    "");
-            String cuadrilla        = resumenCosmos.getOrDefault("cuadrillas",       "0");
-            String fechaFinalizacion= resumenCosmos.getOrDefault("fechaFinalizacion","");
-            String fechaInicio      = resumenCosmos.getOrDefault("fechaInicio",      "");
-            String nroSemana        = resumenCosmos.getOrDefault("semana",           "");
-            String tiempoEfectivo   = resumenCosmos.getOrDefault("tiempoEfectivo",   "0");
-
-            String mes = extraerMesDesdeFecha(fechaFinalizacion);
-
-            LecturaConciliado lecturaConciliado = new LecturaConciliado(this.rutaConciliado);
-            String muelle = lecturaConciliado.extraerMuelleNave(nroVisita);
-
-            LecturaMoveHistory lecturaMoveHistory = new LecturaMoveHistory(this.rutaMoveHistory);
-            lecturaMoveHistory.setNroVisita(nroVisita);
-            lecturaMoveHistory.cargarDatos();
-
-            double movimientosSTS = lecturaMoveHistory.extraerMovimientosSTS();
-            double movimientosRTG = lecturaMoveHistory.extraerMovimientosRTG();
-            double movimientosERTG = lecturaMoveHistory.extraerMovimientosERTG();
-            double movimientosRSK = lecturaMoveHistory.extraerMovimientosStacker();
-            double movimientosEH  = lecturaMoveHistory.extraerMovimientosEmptyHand();
-
-            datos.put("mes",                mes);
-            datos.put("semana",             nroSemana);
-            datos.put("nave",               nombreVisita);
-            datos.put("visita",             nroVisita);
-            datos.put("servicio",           lineaServicio);
-            datos.put("muelle",             muelle);
-            datos.put("fechaInicio",        fechaInicio);
-            datos.put("fechaTermino",       fechaFinalizacion);
-            datos.put("tiempoEfectivo",     tiempoEfectivo);
-            datos.put("cuadrillas",         cuadrilla);
-            datos.put("movimientosCont",    (double) sumaMovCont);
-            datos.put("movimientosTEUS",    (double) sumaTeus);
-            datos.put("movimientosSTS",     movimientosSTS);
-            datos.put("movimientosRTG",     movimientosRTG);
-            datos.put("movimientosERTG",    movimientosERTG);
-            datos.put("movimientosStacker", movimientosRSK);
-            datos.put("movimientosEmtpy", movimientosEH);
-
-        } catch (Exception err){
-            System.out.println("err = " + err.getMessage());
-        }
-
-        return datos;
-    }
-
     // =========================================================
-    //  ESCRITURA EN TABLA DESTINO — una visita
+    //  API PÚBLICA — punto de entrada principal
     // =========================================================
 
     /**
-     * Escribe los datos de UNA visita en la tabla del Excel destino,
-     * expandiendo la tabla y preservando el formato.
+     * Procesa un lote de visitas con el nuevo flujo optimizado:
+     *   Fase 1 → carga todas las fuentes UNA sola vez en memoria
+     *   Fase 2 → calcula ResultadoNave para cada visita en memoria
+     *   Fase 3 → escribe todas las filas al Excel destino UNA sola vez
      */
-    public void escribirVisitaEnTabla(String nroVisita) {
-        HashMap<String, Object> datos = extraerDatosCostos(nroVisita);
-        if (datos.isEmpty()) {
-            System.out.println("[ERROR] No se obtuvieron datos para: " + nroVisita);
+    public void procesarVisitas(List<String> nrosVisita) {
+        System.out.println("\n[INFO] ══════════════════════════════════════════════");
+        System.out.println("[INFO]  INICIO — lote de " + nrosVisita.size() + " visitas");
+        System.out.println("[INFO] ══════════════════════════════════════════════");
+
+        // ── FASE 1: Cargar todas las fuentes en memoria ───────────
+        System.out.println("\n[FASE 1] Cargando fuentes de datos...");
+
+        LecturaMoveHistory moveHistory = cargarMoveHistory(nrosVisita);
+        LecturaControlCosmos cosmos    = cargarCosmos(nrosVisita);
+        LecturaThroughput throughput   = cargarThroughput(nrosVisita);
+        LecturaConciliado conciliado   = cargarConciliado();
+
+        // OM Mensual no cambia por visita — se carga una vez
+        // El mes se determina desde la primera visita con fecha válida
+        LecturaOmMensual omMensual     = cargarOmMensual(cosmos, nrosVisita);
+
+        if (omMensual == null) {
+            System.out.println("[ERROR] No se pudo cargar OM Mensual. Proceso abortado.");
             return;
         }
-        escribirFilaEnDestino(datos);          // hoja 0 — sin cambios
-        escritorDetalle.escribirFila(datos);   // hoja 1 — delegado
-    }
 
-    /**
-     * Escribe los datos de MÚLTIPLES visitas en la tabla destino,
-     * una fila por visita, en el orden del array recibido.
-     *
-     * @param nrosVisita Lista de visitas a procesar. Ej: ["058-26", "073-26", "116-26"]
-     */
-    public void escribirVariasVisitasEnTabla(List<String> nrosVisita) {
-        System.out.println("\n[INFO] ═══ Procesando lote de " + nrosVisita.size() + " visitas ═══");
+        // Extraer tarifas del OM Mensual (son las mismas para todas las visitas del mes)
+        double costoEstibaUnit  = omMensual.extraerCostoEstiba();
+        HashMap<String, Double> costosDiesel    = omMensual.extraerResumenCostosDiesel();
+        HashMap<String, Double> costosElectricos = omMensual.extraerResumenCostosEnergia();
 
-        int exitosas = 0;
-        int fallidas = 0;
-        List<String> visitasFallidas = new ArrayList<>();
+        double costoPorMovRTG     = costosDiesel.getOrDefault("costoPorMovRTG",    0.0);
+        double costoPorMovStacker = costosDiesel.getOrDefault("costoPorMovSTK",    0.0);
+        double costoPorMovEH      = costosDiesel.getOrDefault("costoPorMovEH",     0.0);
+        double costoGMGalonHora   = costosDiesel.getOrDefault("costoGMGalonHora",  0.0);
+        double costoTTHora        = costosDiesel.getOrDefault("costoPorMovTT",     0.0);
+        double costoUnitGalon     = costosDiesel.getOrDefault("costoUnitGalon",    0.0);
+        double costoSTS01Tarifa   = costosElectricos.getOrDefault("costoEnergiaSTS01", 0.0);
+        double costoSTS02Tarifa   = costosElectricos.getOrDefault("costoEnergiaSTS02", 0.0);
+        double costoSTS03Tarifa   = costosElectricos.getOrDefault("costoEnergiaSTS03", 0.0);
+        double costoERTG05Tarifa  = costosElectricos.getOrDefault("costoEnergiaRTG05", 0.0);
+        double costoERTG06Tarifa  = costosElectricos.getOrDefault("costoEnergiaRTG06", 0.0);
 
-        for (String visita : nrosVisita) {
+        // ── FASE 2: Calcular en memoria ───────────────────────────
+        System.out.println("\n[FASE 2] Calculando costos en memoria...");
+
+        List<ResultadoNave> resultados = new ArrayList<>();
+        List<String> fallidas = new ArrayList<>();
+
+        for (String nroVisita : nrosVisita) {
             try {
-                escribirVisitaEnTabla(visita.trim());
-                exitosas++;
+                ResultadoNave resultado = calcularVisita(
+                        nroVisita,
+                        moveHistory, cosmos, throughput, conciliado,
+                        costoEstibaUnit,
+                        costoPorMovRTG, costoPorMovStacker, costoPorMovEH,
+                        costoGMGalonHora, costoTTHora, costoUnitGalon,
+                        costoSTS01Tarifa, costoSTS02Tarifa, costoSTS03Tarifa,
+                        costoERTG05Tarifa, costoERTG06Tarifa
+                );
+                resultados.add(resultado);
+                System.out.println("[OK] Calculada: " + resultado);
+
             } catch (Exception e) {
-                System.out.println("[ERROR] Falló visita '" + visita + "': " + e.getMessage());
-                visitasFallidas.add(visita);
-                fallidas++;
+                System.out.println("[ERROR] Falló cálculo para '" + nroVisita + "': " + e.getMessage());
+                e.printStackTrace();
+                fallidas.add(nroVisita);
             }
         }
 
-        // Resumen del lote
-        System.out.println("\n════════ RESUMEN DEL LOTE ════════");
-        System.out.println(" Total procesadas : " + nrosVisita.size());
-        System.out.println(" Exitosas         : " + exitosas);
-        System.out.println(" Fallidas         : " + fallidas);
-        if (!visitasFallidas.isEmpty()) {
-            System.out.println(" Visitas fallidas : " + visitasFallidas);
+        // ── FASE 3: Escritura única al Excel destino ──────────────
+        System.out.println("\n[FASE 3] Escribiendo " + resultados.size() + " filas al Excel destino...");
+
+        if (!resultados.isEmpty()) {
+            escribirTodasLasFilas(resultados);
+            if (escritorDetalle != null) {
+                // escritorDetalle.escribirTodasLasFilas(resultados);
+            }
         }
-        System.out.println("══════════════════════════════════");
+
+        // ── Resumen final ──────────────────────────────────────────
+        System.out.println("\n════════════ RESUMEN DEL LOTE ════════════");
+        System.out.println(" Total visitas    : " + nrosVisita.size());
+        System.out.println(" Exitosas         : " + resultados.size());
+        System.out.println(" Fallidas         : " + fallidas.size());
+        if (!fallidas.isEmpty()) System.out.println(" Visitas fallidas : " + fallidas);
+        System.out.println("══════════════════════════════════════════");
     }
 
     // =========================================================
-    //  ESCRITURA FÍSICA EN EXCEL — usa LecturaExcels
+    //  FASE 1 — CARGA DE FUENTES
     // =========================================================
 
-    private void escribirFilaEnDestino(HashMap<String, Object> datos) {
+    private LecturaMoveHistory cargarMoveHistory(List<String> visitas) {
+        try {
+            LecturaMoveHistory lmh = new LecturaMoveHistory(rutaMoveHistory);
+            lmh.setNombreHoja(nombreHojaMoveHistory);
+            lmh.cargarDatosDeVisitas(visitas);
+            System.out.println("[OK] MoveHistory cargado.");
+            return lmh;
+        } catch (Exception e) {
+            System.out.println("[ERROR] cargarMoveHistory: " + e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+
+    private LecturaControlCosmos cargarCosmos(List<String> visitas) {
+        try {
+            LecturaControlCosmos lcc = new LecturaControlCosmos(rutaControlCosmos);
+            lcc.setNombreHoja(nombreHojaCosmos);
+            lcc.cargarDatosDeVisitas(visitas);
+            System.out.println("[OK] ControlCosmos cargado.");
+            return lcc;
+        } catch (Exception e) {
+            System.out.println("[ERROR] cargarCosmos: " + e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+
+    private LecturaThroughput cargarThroughput(List<String> visitas) {
+        try {
+            LecturaThroughput lt = new LecturaThroughput(rutaThroughput);
+            lt.cargarDatosDeVisitas(visitas);   // debes aplicar el mismo patrón en LecturaThroughput
+            System.out.println("[OK] Throughput cargado.");
+            return lt;
+        } catch (Exception e) {
+            System.out.println("[ERROR] cargarThroughput: " + e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+
+    private LecturaConciliado cargarConciliado() {
+        try {
+            LecturaConciliado lc = new LecturaConciliado(rutaConciliado);
+            lc.cargarTodosLosDatos();   // debes aplicar el mismo patrón en LecturaConciliado
+            System.out.println("[OK] Conciliado cargado.");
+            return lc;
+        } catch (Exception e) {
+            System.out.println("[ERROR] cargarConciliado: " + e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Carga OM Mensual determinando el mes desde la primera visita con fecha válida,
+     * o desde numMesOM si fue configurado manualmente.
+     */
+    private LecturaOmMensual cargarOmMensual(LecturaControlCosmos cosmos,
+                                             List<String> visitas) {
+        try {
+            int mes = numMesOM;
+            if (mes <= 0) {
+                // Buscar el mes desde la primera visita con fecha válida
+                for (String v : visitas) {
+                    mes = cosmos.extraerNumeroMes(v);
+                    if (mes > 0) break;
+                }
+            }
+            if (mes <= 0) {
+                System.out.println("[ERROR] No se pudo determinar el mes para OM Mensual.");
+                return null;
+            }
+
+            LecturaOmMensual lom = new LecturaOmMensual(rutaOMMensual);
+            lom.setNumMes(mes);
+            lom.setNombreHojaOMDiesel("Fuel26");
+            lom.setNombreHojaEnergia("WS-Energy");
+            lom.setNombreHojaEstibas("Stevedoring26");
+            System.out.println("[OK] OM Mensual cargado para mes: " + mes);
+            return lom;
+        } catch (Exception e) {
+            System.out.println("[ERROR] cargarOmMensual: " + e.getMessage());
+            return null;
+        }
+    }
+
+    // =========================================================
+    //  FASE 2 — CÁLCULO DE UNA VISITA → ResultadoNave
+    // =========================================================
+
+    private ResultadoNave calcularVisita(
+            String nroVisita,
+            LecturaMoveHistory moveHistory,
+            LecturaControlCosmos cosmos,
+            LecturaThroughput throughput,
+            LecturaConciliado conciliado,
+            double costoEstibaUnit,
+            double costoPorMovRTG,
+            double costoPorMovStacker,
+            double costoPorMovEH,
+            double costoGMGalonHora,
+            double costoTTHora,
+            double costoUnitGalon,
+            double costoSTS01Tarifa,
+            double costoSTS02Tarifa,
+            double costoSTS03Tarifa,
+            double costoERTG05Tarifa,
+            double costoERTG06Tarifa) {
+
+        System.out.println("\n[INFO] ─── Calculando visita: " + nroVisita + " ───");
+
+        // ── Throughput ────────────────────────────────────────────
+        HashMap<String, Integer> movTeus = throughput.extraerResumenMovTeus(nroVisita);
+        int sumaMovCont = movTeus.getOrDefault("sumaMovContenedores", 0);
+        int sumaTeus    = movTeus.getOrDefault("sumaTeus",            0);
+
+        // ── Cosmos ────────────────────────────────────────────────
+        HashMap<String, String> resumenCosmos = cosmos.extraerResumenNaveCuad(nroVisita);
+        String nombreVisita      = resumenCosmos.getOrDefault("nombreVisita",      "");
+        String lineaServicio     = resumenCosmos.getOrDefault("lineaServicio",     "");
+        String cuadrillaStr      = resumenCosmos.getOrDefault("cuadrillas",        "0");
+        String fechaFinalizacion = resumenCosmos.getOrDefault("fechaFinalizacion", "");
+        String fechaInicio       = resumenCosmos.getOrDefault("fechaInicio",       "");
+        String nroSemana         = resumenCosmos.getOrDefault("semana",            "");
+        String tiempoEfectivoStr = resumenCosmos.getOrDefault("tiempoEfectivo",    "0");
+        double cuadrillas        = parsearDouble(cuadrillaStr);
+        double tiempoEfectivo    = parsearDouble(tiempoEfectivoStr);
+        String mes               = cosmos.extraerMes(nroVisita);
+
+        // ── Conciliado ────────────────────────────────────────────
+        String muelle = conciliado.extraerMuelleNave(nroVisita);
+
+        // ── MoveHistory: duraciones ───────────────────────────────
+        Map<String, Double> duraciones = moveHistory.extraerResumenDuracionGruas(nroVisita);
+
+        double durSTS01 = duraciones.getOrDefault("STS01", 0.0);
+        double durSTS02 = duraciones.getOrDefault("STS02", 0.0);
+        double durSTS03 = duraciones.getOrDefault("STS03", 0.0);
+        double durGM01  = duraciones.getOrDefault("GM01",  0.0);
+        double durGM02  = duraciones.getOrDefault("GM02",  0.0);
+        double durRTG01 = duraciones.getOrDefault("RTG01", 0.0);
+        double durRTG02 = duraciones.getOrDefault("RTG02", 0.0);
+        double durRTG03 = duraciones.getOrDefault("RTG03", 0.0);
+        double durRTG04 = duraciones.getOrDefault("RTG04", 0.0);
+        double durRTG05 = duraciones.getOrDefault("RTG05", 0.0);
+        double durRTG06 = duraciones.getOrDefault("RTG06", 0.0);
+        double durS501  = duraciones.getOrDefault("S-501", 0.0);
+        double durS502  = duraciones.getOrDefault("S-502", 0.0);
+        double durS503  = duraciones.getOrDefault("S-503", 0.0);
+        double durS504  = duraciones.getOrDefault("S-504", 0.0);
+        double durS505  = duraciones.getOrDefault("S-505", 0.0);
+        double durS506  = duraciones.getOrDefault("S-506", 0.0);
+        double durS507  = duraciones.getOrDefault("S-507", 0.0);
+
+        // ── MoveHistory: movimientos ──────────────────────────────
+        int movRTG = moveHistory.extraerMovimientosRTG(nroVisita);
+        int movRSK = moveHistory.extraerMovimientosStacker(nroVisita);
+        int movEH  = moveHistory.extraerMovimientosEmptyHand(nroVisita);
+
+        // Grúas activas (para cálculo ITV)
+        long gruasGMActivas  = duraciones.entrySet().stream()
+                .filter(e -> e.getKey().startsWith("GM")  && e.getValue() > 0.0).count();
+        long gruasSTSActivas = duraciones.entrySet().stream()
+                .filter(e -> e.getKey().startsWith("STS") && e.getValue() > 0.0).count();
+
+        double itvAsignados = gruasGMActivas * 4.0 + gruasSTSActivas * 5.0;
+
+        // ── Costos diesel ─────────────────────────────────────────
+        double costoEstiba         = costoEstibaUnit * cuadrillas;
+        double costoRTG            = movRTG * costoPorMovRTG;
+        double costoRSK            = movRSK * costoPorMovStacker;
+        double costoEH             = movEH  * costoPorMovEH;
+        double costoGM             = (durGM01 + durGM02) * costoGMGalonHora;
+        double galonesITVHora      = tiempoEfectivo * costoTTHora;
+        double costoITV            = itvAsignados * galonesITVHora * costoUnitGalon;
+        double subtotalDiesel      = costoRTG + costoRSK + costoEH + costoGM + costoITV;
+
+        // ── Costos energía eléctrica ──────────────────────────────
+        double costoTotalSTS01     = costoSTS01Tarifa  * durSTS01;
+        double costoTotalSTS02     = costoSTS02Tarifa  * durSTS02;
+        double costoTotalSTS03     = costoSTS03Tarifa  * durSTS03;
+        double costoTotalRTG05     = costoERTG05Tarifa * durRTG05;
+        double costoTotalRTG06     = costoERTG06Tarifa * durRTG06;
+        double subtotalEnergia     = costoTotalSTS01 + costoTotalSTS02 + costoTotalSTS03
+                + costoTotalRTG05 + costoTotalRTG06;
+
+        // ── Depreciaciones ────────────────────────────────────────
+        double depSTS01 = durSTS01 * costoDepreciacionSTS;
+        double depSTS02 = durSTS02 * costoDepreciacionSTS;
+        double depSTS03 = durSTS03 * costoDepreciacionSTS;
+        double depGM01  = durGM01  * costoDepreciacionGM;
+        double depGM02  = durGM02  * costoDepreciacionGM;
+        double depRTG05 = durRTG05 * costoDepreciacionERTG;
+        double depRTG06 = durRTG06 * costoDepreciacionERTG;
+        double depRTG01 = durRTG01 * costoDepreciacionRTG;
+        double depRTG02 = durRTG02 * costoDepreciacionRTG;
+        double depRTG03 = durRTG03 * costoDepreciacionRTG;
+        double depRTG04 = durRTG04 * costoDepreciacionRTG;
+        double depS501  = durS501  * costoDepreciacionRSK;
+        double depS502  = durS502  * costoDepreciacionRSK;
+        double depS503  = durS503  * costoDepreciacionRSK;
+        double depS506  = durS506  * costoDepreciacionRSK;
+        double depS504  = durS504  * costoDepreciacionEH;
+        double depS505  = durS505  * costoDepreciacionEH;
+        double depS507  = durS507  * costoDepreciacionEH;
+        double depTT    = itvAsignados * promedioVueltasITV * costoDepreciacionITV;
+        double subtotalDepreciacion = depSTS01 + depSTS02 + depSTS03
+                + depGM01 + depGM02
+                + depRTG05 + depRTG06
+                + depRTG01 + depRTG02 + depRTG03 + depRTG04
+                + depS501 + depS502 + depS503 + depS506
+                + depS504 + depS505 + depS507
+                + depTT;
+
+        // ── Totales ───────────────────────────────────────────────
+        double costoNaveTotal = costoEstiba + subtotalDiesel + subtotalEnergia + subtotalDepreciacion;
+        double costoPorTeu    = sumaTeus > 0 ? costoNaveTotal / sumaTeus : 0.0;
+
+        // ── Construir ResultadoNave ────────────────────────────────
+        return new ResultadoNave.Builder()
+                .nroVisita(nroVisita)
+                .nombreNave(nombreVisita)
+                .mes(mes)
+                .semana(nroSemana)
+                .lineaServicio(lineaServicio)
+                .muelle(muelle)
+                .fechaInicio(fechaInicio)
+                .fechaFin(fechaFinalizacion)
+                .cuadrillas(cuadrillas)
+                .tiempoEfectivo(tiempoEfectivo)
+                .movContenedores(sumaMovCont)
+                .teus(sumaTeus)
+                .durSTS01(durSTS01).durSTS02(durSTS02).durSTS03(durSTS03)
+                .durGM01(durGM01).durGM02(durGM02)
+                .durRTG01(durRTG01).durRTG02(durRTG02)
+                .durRTG03(durRTG03).durRTG04(durRTG04)
+                .durRTG05(durRTG05).durRTG06(durRTG06)
+                .movRTG(movRTG).movRSK(movRSK).movEH(movEH)
+                .itvAsignados(itvAsignados)
+                .costoUnitCuadrilla(costoEstibaUnit)
+                .costoEstiba(costoEstiba)
+                .costoRTG(costoRTG).costoRSK(costoRSK).costoEH(costoEH)
+                .costoGM(costoGM).costoITV(costoITV)
+                .subtotalDiesel(subtotalDiesel)
+                .costoSTS01(costoTotalSTS01).costoSTS02(costoTotalSTS02).costoSTS03(costoTotalSTS03)
+                .costoRTG05(costoTotalRTG05).costoRTG06(costoTotalRTG06)
+                .subtotalEnergia(subtotalEnergia)
+                .depSTS01(depSTS01).depSTS02(depSTS02).depSTS03(depSTS03)
+                .depGM01(depGM01).depGM02(depGM02)
+                .depRTG05(depRTG05).depRTG06(depRTG06)
+                .depRTG01(depRTG01).depRTG02(depRTG02).depRTG03(depRTG03).depRTG04(depRTG04)
+                .depS501(depS501).depS502(depS502).depS503(depS503).depS506(depS506)
+                .depS504(depS504).depS505(depS505).depS507(depS507)
+                .depTT(depTT).subtotalDepreciacion(subtotalDepreciacion)
+                .costoNaveTotal(costoNaveTotal)
+                .costoPorTeu(costoPorTeu)
+                .build();
+    }
+
+    // =========================================================
+    //  FASE 3 — ESCRITURA ÚNICA AL EXCEL DESTINO
+    // =========================================================
+
+    /**
+     * Abre el Excel destino UNA sola vez, escribe todas las filas y cierra.
+     */
+    private void escribirTodasLasFilas(List<ResultadoNave> resultados) {
         LecturaExcels excelDestino = null;
         try {
             excelDestino = new LecturaExcels(this.rutaExcelDestino);
-
-            // Insertar nueva fila en la tabla expandiendo su rango y copiando estilos
-            Row nuevaFila = excelDestino.insertarFilaEnTabla(hojaDestinoCostos, 0);
-
-            // --- Escribir cada columna ---
-            setCeldaTexto(nuevaFila,   colMes,             getString(datos, "mes"));
-            setCeldaTexto(nuevaFila,   colNombreNave,      getString(datos, "nombreVisita"));
-            setCeldaTexto(nuevaFila,   colVisitaTabla,     getString(datos, "nroVisita"));
-            setCeldaTexto(nuevaFila,   colLinea,           getString(datos, "lineaServicio"));
-            setCeldaTexto(nuevaFila,   colFechaFin,        getString(datos, "fechaFin"));
-            setCeldaTexto(nuevaFila,   colSemana,          getString(datos, "semana"));
-            setCeldaNumero(nuevaFila,  colCuadrillasTabla, getDouble(datos, "cuadrillas"));
-            setCeldaNumero(nuevaFila,  colMovCont,         getDouble(datos, "movCont"));
-            setCeldaNumero(nuevaFila,  colTeus,            getDouble(datos, "teus"));
-            setCeldaTexto(nuevaFila,   colMuelle,          getString(datos, "muelle"));
-            setCeldaNumero(nuevaFila,  colTiempoEfectivo,  getDouble(datos, "tiempoEfectivo"));
-            setCeldaNumero(nuevaFila,  colCostoEstiba,     getDouble(datos, "costoEstiba"));
-            setCeldaNumero(nuevaFila,  colCostoRTG,        getDouble(datos, "costoRTG"));
-            setCeldaNumero(nuevaFila, colCostoReachStack,  getDouble(datos, "costoReactStacker"));
-            setCeldaNumero(nuevaFila, colCostoEmptyHand,   getDouble(datos, "costoEmptyHand"));
-            setCeldaNumero(nuevaFila, colCostoGruaMov,     getDouble(datos, "costoTotalGruaMovil"));
-            setCeldaNumero(nuevaFila, colCostoITV,         getDouble(datos, "costoTotalITV"));
-            setCeldaNumero(nuevaFila, colSubtotalCosto,    getDouble(datos, "subtotalCosto"));
-            setCeldaNumero(nuevaFila, colCostoSTS01,       getDouble(datos, "costoTotalSTS01"));
-            setCeldaNumero(nuevaFila, colCostoSTS02,       getDouble(datos, "costoTotalSTS02"));
-            setCeldaNumero(nuevaFila, colCostoSTS03,       getDouble(datos, "costoTotalSTS03"));
-            setCeldaNumero(nuevaFila, colCostoRTG05,       getDouble(datos, "costoTotalRTG05"));
-            setCeldaNumero(nuevaFila, colCostoRTG06,       getDouble(datos, "costoTotalRTG06"));
-            setCeldaNumero(nuevaFila, colCostoSubtotalSTSRTG, getDouble(datos, "costoSubtotalSTSRTG"));
-            setCeldaNumero(nuevaFila, colCostoDeprecSTS01, getDouble(datos, "costoDepreciacionSTS01") );
-            setCeldaNumero(nuevaFila, colCostoDeprecSTS02, getDouble(datos, "costoDepreciacionSTS02"));
-            setCeldaNumero(nuevaFila, colCostoDeprecSTS03, getDouble(datos, "costoDepreciacionSTS03"));
-            setCeldaNumero(nuevaFila, colCostoDeprecGM01, getDouble(datos, "costoDepreciacionGM01"));
-            setCeldaNumero(nuevaFila, colCostoDeprecGM02, getDouble(datos, "costoDepreciacionGM02"));
-            setCeldaNumero(nuevaFila, colCostoDeprecRTG05, getDouble(datos, "costoDepreciacionRTG05"));
-            setCeldaNumero(nuevaFila, colCostoDeprecRTG06, getDouble(datos, "costoDepreciacionRTG06"));
-            setCeldaNumero(nuevaFila, colCostoDeprecRTG01, getDouble(datos, "costoDepreciacionRTG01"));
-            setCeldaNumero(nuevaFila, colCostoDeprecRTG02, getDouble(datos, "costoDepreciacionRTG02"));
-            setCeldaNumero(nuevaFila, colCostoDeprecRTG03, getDouble(datos, "costoDepreciacionRTG03"));
-            setCeldaNumero(nuevaFila, colCostoDeprecRTG04, getDouble(datos, "costoDepreciacionRTG04"));
-            setCeldaNumero(nuevaFila, colCostoDeprecS501, getDouble(datos, "costoDepreciacionS501"));
-            setCeldaNumero(nuevaFila, colCostoDeprecS502, getDouble(datos, "costoDepreciacionS502"));
-            setCeldaNumero(nuevaFila, colCostoDeprecS503, getDouble(datos, "costoDepreciacionS503"));
-            setCeldaNumero(nuevaFila, colCostoDeprecS506, getDouble(datos, "costoDepreciacionS506"));
-            setCeldaNumero(nuevaFila, colCostoDeprecS504, getDouble(datos, "costoDepreciacionS504"));
-            setCeldaNumero(nuevaFila, colCostoDeprecS505, getDouble(datos, "costoDepreciacionS505"));
-            setCeldaNumero(nuevaFila, colCostoDeprecS507, getDouble(datos, "costoDepreciacionS507"));
-            setCeldaNumero(nuevaFila, colCostoDeprecTT, getDouble(datos, "costoDepreciacionTT"));
-            setCeldaNumero(nuevaFila, colCostoDepreciacion, getDouble(datos, "subtotalCostoDepreciacion"));
-            setCeldaNumero(nuevaFila, colCostoNaveOperativo, getDouble(datos, "costoNaveOperativo"));
-            setCeldaNumero(nuevaFila, colCostoTeu, getDouble(datos, "costoPorTeu"));
-
-            excelDestino.guardar();
-            System.out.println("[OK] Fila escrita en tabla destino para visita: "
-                    + getString(datos, "nroVisita"));
-
-        } catch (Exception err) {
-            System.out.println("[ERROR] escribirFilaEnDestino: " + err.getMessage());
-            err.printStackTrace();
-        } finally {
-            if (excelDestino != null) {
-                try { excelDestino.cerrar(); } catch (Exception ignored) {}
+            for (ResultadoNave r : resultados) {
+                Row fila = excelDestino.insertarFilaEnTabla(hojaDestinoCostos, 0);
+                poblarFilaDestino(fila, r);
             }
+            excelDestino.guardar();
+            System.out.println("[OK] " + resultados.size()
+                    + " filas escritas en hoja de costos.");
+        } catch (Exception e) {
+            System.out.println("[ERROR] escribirTodasLasFilas: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            if (excelDestino != null) try { excelDestino.cerrar(); } catch (Exception ignored) {}
         }
     }
 
+    /**
+     * Vuelca un ResultadoNave en la fila de la tabla de costos (hoja 0).
+     * Tipado directo — sin HashMap, sin casteos.
+     */
+    private void poblarFilaDestino(Row fila, ResultadoNave r) {
+        setCeldaTexto(fila,  colMes,                 r.mes);
+        setCeldaTexto(fila,  colNombreNave,           r.nombreNave);
+        setCeldaTexto(fila,  colVisitaTabla,          r.nroVisita);
+        setCeldaTexto(fila,  colLinea,                r.lineaServicio);
+        setCeldaTexto(fila,  colFechaFin,             r.fechaFin);
+        setCeldaTexto(fila,  colSemana,               r.semana);
+        setCeldaNumero(fila, colCuadrillasTabla,      r.cuadrillas);
+        setCeldaNumero(fila, colMovCont,              r.movContenedores);
+        setCeldaNumero(fila, colTeus,                 r.teus);
+        setCeldaTexto(fila,  colMuelle,               r.muelle);
+        setCeldaNumero(fila, colTiempoEfectivo,       r.tiempoEfectivo);
+        setCeldaNumero(fila, colCostoEstiba,          r.costoEstiba);
+        setCeldaNumero(fila, colCostoRTG,             r.costoRTG);
+        setCeldaNumero(fila, colCostoReachStack,      r.costoRSK);
+        setCeldaNumero(fila, colCostoEmptyHand,       r.costoEH);
+        setCeldaNumero(fila, colCostoGruaMov,         r.costoGM);
+        setCeldaNumero(fila, colCostoITV,             r.costoITV);
+        setCeldaNumero(fila, colSubtotalCosto,        r.subtotalDiesel);
+        setCeldaNumero(fila, colCostoSTS01,           r.costoSTS01);
+        setCeldaNumero(fila, colCostoSTS02,           r.costoSTS02);
+        setCeldaNumero(fila, colCostoSTS03,           r.costoSTS03);
+        setCeldaNumero(fila, colCostoRTG05,           r.costoRTG05);
+        setCeldaNumero(fila, colCostoRTG06,           r.costoRTG06);
+        setCeldaNumero(fila, colCostoSubtotalSTSRTG,  r.subtotalEnergia);
+        setCeldaNumero(fila, colCostoDeprecSTS01,     r.depSTS01);
+        setCeldaNumero(fila, colCostoDeprecSTS02,     r.depSTS02);
+        setCeldaNumero(fila, colCostoDeprecSTS03,     r.depSTS03);
+        setCeldaNumero(fila, colCostoDeprecGM01,      r.depGM01);
+        setCeldaNumero(fila, colCostoDeprecGM02,      r.depGM02);
+        setCeldaNumero(fila, colCostoDeprecRTG05,     r.depRTG05);
+        setCeldaNumero(fila, colCostoDeprecRTG06,     r.depRTG06);
+        setCeldaNumero(fila, colCostoDeprecRTG01,     r.depRTG01);
+        setCeldaNumero(fila, colCostoDeprecRTG02,     r.depRTG02);
+        setCeldaNumero(fila, colCostoDeprecRTG03,     r.depRTG03);
+        setCeldaNumero(fila, colCostoDeprecRTG04,     r.depRTG04);
+        setCeldaNumero(fila, colCostoDeprecS501,      r.depS501);
+        setCeldaNumero(fila, colCostoDeprecS502,      r.depS502);
+        setCeldaNumero(fila, colCostoDeprecS503,      r.depS503);
+        setCeldaNumero(fila, colCostoDeprecS506,      r.depS506);
+        setCeldaNumero(fila, colCostoDeprecS504,      r.depS504);
+        setCeldaNumero(fila, colCostoDeprecS505,      r.depS505);
+        setCeldaNumero(fila, colCostoDeprecS507,      r.depS507);
+        setCeldaNumero(fila, colCostoDeprecTT,        r.depTT);
+        setCeldaNumero(fila, colCostoDepreciacion,    r.subtotalDepreciacion);
+        setCeldaNumero(fila, colCostoNaveOperativo,   r.costoNaveTotal);
+        setCeldaNumero(fila, colCostoTeu,             r.costoPorTeu);
+    }
 
-    public void imprimirReporteDetalladoNave(String nroVisita) {
-        HashMap<String, Object> datos = extraerDatosCostos(nroVisita);
-        if (datos.isEmpty()) {
-            System.out.println("[ERROR] No se pudieron obtener datos para: " + nroVisita);
-            return;
-        }
+    // =========================================================
+    //  REPORTE EN CONSOLA — sin cambios funcionales
+    // =========================================================
 
-        // Extraer valores para facilitar el reporte
-        double sumaTeus    = getDouble(datos, "teus");
-        double sumaMovCont = getDouble(datos, "movCont");
-        double costoEstiba = getDouble(datos, "costoEstiba");
-        double costoRTG    = getDouble(datos, "costoRTG");
-        double costoRSK    = getDouble(datos, "costoReactStacker");
-        double costoEH     = getDouble(datos, "costoEmptyHand");
-        double costoGM     = getDouble(datos, "costoTotalGruaMovil");
-        double costoITV    = getDouble(datos, "costoTotalITV");
-        double subtotal    = getDouble(datos, "subtotalCosto");
-
-        double costoSTS01  = getDouble(datos, "costoTotalSTS01");
-        double costoSTS02  = getDouble(datos, "costoTotalSTS02");
-        double costoSTS03  = getDouble(datos, "costoTotalSTS03");
-        double costoRTG05  = getDouble(datos, "costoTotalRTG05");
-        double costoRTG06  = getDouble(datos, "costoTotalRTG06");
-        double subtotalSTS = getDouble(datos, "costoSubtotalSTSRTG");
-
-        double depSTS01    = getDouble(datos, "costoDepreciacionSTS01");
-        double depSTS02    = getDouble(datos, "costoDepreciacionSTS02");
-        double depSTS03    = getDouble(datos, "costoDepreciacionSTS03");
-        double depGM01     = getDouble(datos, "costoDepreciacionGM01");
-        double depGM02     = getDouble(datos, "costoDepreciacionGM02");
-        double depRTG05    = getDouble(datos, "costoDepreciacionRTG05");
-        double depRTG06    = getDouble(datos, "costoDepreciacionRTG06");
-        double depRTG01    = getDouble(datos, "costoDepreciacionRTG01");
-        double depRTG02    = getDouble(datos, "costoDepreciacionRTG02");
-        double depRTG03    = getDouble(datos, "costoDepreciacionRTG03");
-        double depRTG04    = getDouble(datos, "costoDepreciacionRTG04");
-        double depS501     = getDouble(datos, "costoDepreciacionS501");
-        double depS502     = getDouble(datos, "costoDepreciacionS502");
-        double depS503     = getDouble(datos, "costoDepreciacionS503");
-        double depS506     = getDouble(datos, "costoDepreciacionS506");
-        double depS504     = getDouble(datos, "costoDepreciacionS504");
-        double depS505     = getDouble(datos, "costoDepreciacionS505");
-        double depS507     = getDouble(datos, "costoDepreciacionS507");
-        double depTT       = getDouble(datos, "costoDepreciacionTT");
-        double subtotalDep = getDouble(datos, "subtotalCostoDepreciacion");
-
-        double costoOperativo = getDouble(datos, "costoNaveOperativo");
-        double costoPorTeu    = getDouble(datos, "costoPorTeu");
-
-        double duracionRTG01 = getDouble(datos, "duracionRTG01");
-        double duracionRTG02 = getDouble(datos, "duracionRTG02");
-        double duracionRTG03 = getDouble(datos, "duracionRTG03");
-        double duracionRTG04 = getDouble(datos, "duracionRTG04");
-        double duracionRTG05 = getDouble(datos, "duracionRTG05");
-        double duracionRTG06 = getDouble(datos, "duracionRTG06");
-
-        double duracionSTS01 = getDouble(datos, "duracionSTS01");
-        double duracionSTS02 = getDouble(datos, "duracionSTS02");
-        double duracionSTS03 = getDouble(datos, "duracionSTS03");
-        String sep1  = "═==========";
-        String sep2  = "─------------";
-        String sep3  = "·.............";
+    public void imprimirReporteDetalladoNave(ResultadoNave r) {
+        String sep1 = "═";
+        String sep2 = "─";
+        String sep3 = "·";
 
         System.out.println("\n" + sep1);
-        System.out.printf("  REPORTE DETALLADO — VISITA: %-34s%n", getString(datos, "nroVisita"));
+        System.out.printf("  REPORTE DETALLADO — VISITA: %-34s%n", r.nroVisita);
         System.out.println(sep1);
 
-        // ── INFORMACIÓN GENERAL ──────────────────────────────────
-        System.out.println("\n  📋 INFORMACIÓN GENERAL");
+        System.out.println("\n  INFORMACIÓN GENERAL");
         System.out.println(sep2);
-        System.out.printf("  %-22s : %s%n",  "Nombre Nave",      getString(datos, "nombreVisita"));
-        System.out.printf("  %-22s : %s%n",  "Visita",           getString(datos, "nroVisita"));
-        System.out.printf("  %-22s : %s%n",  "Mes",              getString(datos, "mes"));
-        System.out.printf("  %-22s : %s%n",  "Semana",           getString(datos, "semana"));
-        System.out.printf("  %-22s : %s%n",  "Línea Servicio",   getString(datos, "lineaServicio"));
-        System.out.printf("  %-22s : %s%n",  "Muelle",           getString(datos, "muelle"));
-        System.out.printf("  %-22s : %s%n",  "Fecha Término",    getString(datos, "fechaFin"));
-        System.out.printf("  %-22s : %.2f hrs%n", "Tiempo Efectivo", getDouble(datos, "tiempoEfectivo"));
-        System.out.printf("  %-22s : %.0f%n","Cuadrillas",       getDouble(datos, "cuadrillas"));
+        System.out.printf("  %-22s : %s%n",       "Nombre Nave",    r.nombreNave);
+        System.out.printf("  %-22s : %s%n",       "Mes",            r.mes);
+        System.out.printf("  %-22s : %s%n",       "Semana",         r.semana);
+        System.out.printf("  %-22s : %s%n",       "Línea Servicio", r.lineaServicio);
+        System.out.printf("  %-22s : %s%n",       "Muelle",         r.muelle);
+        System.out.printf("  %-22s : %s%n",       "Fecha Término",  r.fechaFin);
+        System.out.printf("  %-22s : %.2f hrs%n", "Tiempo Efectivo",r.tiempoEfectivo);
+        System.out.printf("  %-22s : %.0f%n",     "Cuadrillas",     r.cuadrillas);
 
-        // ── MOVIMIENTOS ───────────────────────────────────────────
-        System.out.println("\n  📦 MOVIMIENTOS");
+        System.out.println("\n  MOVIMIENTOS");
         System.out.println(sep2);
-        System.out.printf("  %-22s : %,.0f%n", "Mov. Contenedores", sumaMovCont);
-        System.out.printf("  %-22s : %,.0f%n", "TEUs",              sumaTeus);
+        System.out.printf("  %-22s : %,.0f%n", "Mov. Contenedores", r.movContenedores);
+        System.out.printf("  %-22s : %,.0f%n", "TEUs",              r.teus);
+
+        System.out.println("\n  DURACIONES (hrs)");
+        System.out.println(sep2);
+        System.out.printf("  %-22s : %.2f%n", "STS01", r.durSTS01);
+        System.out.printf("  %-22s : %.2f%n", "STS02", r.durSTS02);
+        System.out.printf("  %-22s : %.2f%n", "STS03", r.durSTS03);
+        System.out.printf("  %-22s : %.2f%n", "GM01",  r.durGM01);
+        System.out.printf("  %-22s : %.2f%n", "GM02",  r.durGM02);
+        System.out.printf("  %-22s : %.2f%n", "RTG01", r.durRTG01);
+        System.out.printf("  %-22s : %.2f%n", "RTG02", r.durRTG02);
+        System.out.printf("  %-22s : %.2f%n", "RTG03", r.durRTG03);
+        System.out.printf("  %-22s : %.2f%n", "RTG04", r.durRTG04);
+        System.out.printf("  %-22s : %.2f%n", "RTG05", r.durRTG05);
+        System.out.printf("  %-22s : %.2f%n", "RTG06", r.durRTG06);
+
+        System.out.println("\n  COSTO ESTIBA");
+        System.out.println(sep2);
+        System.out.printf("  %-22s : $ %,.2f%n", "Total Estiba",  r.costoEstiba);
+        System.out.printf("  %-22s : $ %,.2f%n", "Costo / TEU",
+                r.teus > 0 ? r.costoEstiba / r.teus : 0);
+
+        System.out.println("\n  COSTO DIESEL");
+        System.out.println(sep2);
+        System.out.printf("  %-22s : $ %,.2f%n", "RTG",            r.costoRTG);
+        System.out.printf("  %-22s : $ %,.2f%n", "Reach Stacker",  r.costoRSK);
+        System.out.printf("  %-22s : $ %,.2f%n", "Empty Handler",  r.costoEH);
+        System.out.printf("  %-22s : $ %,.2f%n", "Grúa Móvil",     r.costoGM);
+        System.out.printf("  %-22s : $ %,.2f%n", "ITV",            r.costoITV);
         System.out.println(sep3);
-        System.out.printf("  %-22s : %,.0f%n", "Ratio TEU/Cont",
-                sumaMovCont > 0 ? sumaTeus / sumaMovCont : 0);
+        System.out.printf("  %-22s : $ %,.2f%n", "SUBTOTAL DIESEL",r.subtotalDiesel);
 
-        System.out.println("\n  📦 DURACIÓN RTG");
+        System.out.println("\n  ENERGÍA ELÉCTRICA");
         System.out.println(sep2);
-        System.out.printf("  %-22s : %,.0f%n", "RTG01", duracionRTG01);
-        System.out.printf("  %-22s : %,.0f%n", "RTG02",  duracionRTG02 );
-        System.out.printf("  %-22s : %,.0f%n", "RTG03",  duracionRTG03 );
-        System.out.printf("  %-22s : %,.0f%n", "RTG04",  duracionRTG04 );
-        System.out.printf("  %-22s : %,.0f%n", "RTG05",  duracionRTG05 );
-        System.out.printf("  %-22s : %,.0f%n", "RTG06",  duracionRTG06 );
-
+        System.out.printf("  %-22s : $ %,.2f%n", "STS01",          r.costoSTS01);
+        System.out.printf("  %-22s : $ %,.2f%n", "STS02",          r.costoSTS02);
+        System.out.printf("  %-22s : $ %,.2f%n", "STS03",          r.costoSTS03);
+        System.out.printf("  %-22s : $ %,.2f%n", "eRTG05",         r.costoRTG05);
+        System.out.printf("  %-22s : $ %,.2f%n", "eRTG06",         r.costoRTG06);
         System.out.println(sep3);
+        System.out.printf("  %-22s : $ %,.2f%n", "SUBTOTAL ENERGÍA",r.subtotalEnergia);
 
-        System.out.println("\n  📦 DURACIÓN STS");
+        System.out.println("\n  DEPRECIACIONES");
         System.out.println(sep2);
-        System.out.printf("  %-22s : %,.0f%n", "STS01", duracionSTS01);
-        System.out.printf("  %-22s : %,.0f%n", "STS02",  duracionSTS02 );
-        System.out.printf("  %-22s : %,.0f%n", "STS03",  duracionSTS03 );
-
-
+        System.out.printf("  %-22s : $ %,.2f%n", "STS01",   r.depSTS01);
+        System.out.printf("  %-22s : $ %,.2f%n", "STS02",   r.depSTS02);
+        System.out.printf("  %-22s : $ %,.2f%n", "STS03",   r.depSTS03);
+        System.out.printf("  %-22s : $ %,.2f%n", "GM01",    r.depGM01);
+        System.out.printf("  %-22s : $ %,.2f%n", "GM02",    r.depGM02);
+        System.out.printf("  %-22s : $ %,.2f%n", "eRTG05",  r.depRTG05);
+        System.out.printf("  %-22s : $ %,.2f%n", "eRTG06",  r.depRTG06);
+        System.out.printf("  %-22s : $ %,.2f%n", "RTG01",   r.depRTG01);
+        System.out.printf("  %-22s : $ %,.2f%n", "RTG02",   r.depRTG02);
+        System.out.printf("  %-22s : $ %,.2f%n", "RTG03",   r.depRTG03);
+        System.out.printf("  %-22s : $ %,.2f%n", "RTG04",   r.depRTG04);
+        System.out.printf("  %-22s : $ %,.2f%n", "S-501",   r.depS501);
+        System.out.printf("  %-22s : $ %,.2f%n", "S-502",   r.depS502);
+        System.out.printf("  %-22s : $ %,.2f%n", "S-503",   r.depS503);
+        System.out.printf("  %-22s : $ %,.2f%n", "S-506",   r.depS506);
+        System.out.printf("  %-22s : $ %,.2f%n", "S-504",   r.depS504);
+        System.out.printf("  %-22s : $ %,.2f%n", "S-505",   r.depS505);
+        System.out.printf("  %-22s : $ %,.2f%n", "S-507",   r.depS507);
+        System.out.printf("  %-22s : $ %,.2f%n", "TT (ITV)",r.depTT);
         System.out.println(sep3);
+        System.out.printf("  %-22s : $ %,.2f%n", "SUBTOTAL DEPREC.", r.subtotalDepreciacion);
 
-        // ── COSTO ESTIBA ─────────────────────────────────────────
-        System.out.println("\n  👷 COSTO ESTIBA (Cuadrillas)");
-        System.out.println(sep2);
-        System.out.printf("  %-22s : $ %,.2f%n", "Total Estiba",      costoEstiba);
-        System.out.printf("  %-22s : $ %,.2f%n", "Costo / TEU",       sumaTeus    > 0 ? costoEstiba / sumaTeus    : 0);
-        System.out.printf("  %-22s : $ %,.2f%n", "Costo / Cont",      sumaMovCont > 0 ? costoEstiba / sumaMovCont : 0);
-
-        // ── COSTO DIESEL (RTG, RSK, EH, GM, ITV) ─────────────────
-        System.out.println("\n  ⛽ COSTO DIESEL");
-        System.out.println(sep2);
-        System.out.printf("  %-22s : $ %,.2f%n", "RTG (diesel)",      costoRTG);
-        System.out.printf("  %-22s : $ %,.2f%n", "Reach Stacker",     costoRSK);
-        System.out.printf("  %-22s : $ %,.2f%n", "Empty Handler",     costoEH);
-        System.out.printf("  %-22s : $ %,.2f%n", "Grúa Móvil (GM)",   costoGM);
-        System.out.printf("  %-22s : $ %,.2f%n", "ITV",               costoITV);
-        System.out.println(sep3);
-        System.out.printf("  %-22s : $ %,.2f%n", "SUBTOTAL DIESEL",   subtotal);
-
-        // ── COSTO ENERGÍA (STS + eRTG) ───────────────────────────
-        System.out.println("\n  ⚡ COSTO ENERGÍA ELÉCTRICA");
-        System.out.println(sep2);
-        System.out.printf("  %-22s : $ %,.2f%n", "STS01",             costoSTS01);
-        System.out.printf("  %-22s : $ %,.2f%n", "STS02",             costoSTS02);
-        System.out.printf("  %-22s : $ %,.2f%n", "STS03",             costoSTS03);
-        System.out.printf("  %-22s : $ %,.2f%n", "eRTG05",            costoRTG05);
-        System.out.printf("  %-22s : $ %,.2f%n", "eRTG06",            costoRTG06);
-        System.out.println(sep3);
-        System.out.printf("  %-22s : $ %,.2f%n", "SUBTOTAL ENERGÍA",  subtotalSTS);
-
-        // ── DEPRECIACIONES ────────────────────────────────────────
-        System.out.println("\n  📉 DEPRECIACIONES");
-        System.out.println(sep2);
-        System.out.printf("  %-22s : $ %,.2f%n", "STS01",             depSTS01);
-        System.out.printf("  %-22s : $ %,.2f%n", "STS02",             depSTS02);
-        System.out.printf("  %-22s : $ %,.2f%n", "STS03",             depSTS03);
-        System.out.printf("  %-22s : $ %,.2f%n", "GM01",              depGM01);
-        System.out.printf("  %-22s : $ %,.2f%n", "GM02",              depGM02);
-        System.out.printf("  %-22s : $ %,.2f%n", "eRTG05",            depRTG05);
-        System.out.printf("  %-22s : $ %,.2f%n", "eRTG06",            depRTG06);
-        System.out.printf("  %-22s : $ %,.2f%n", "RTG01",             depRTG01);
-        System.out.printf("  %-22s : $ %,.2f%n", "RTG02",             depRTG02);
-        System.out.printf("  %-22s : $ %,.2f%n", "RTG03",             depRTG03);
-        System.out.printf("  %-22s : $ %,.2f%n", "RTG04",             depRTG04);
-        System.out.printf("  %-22s : $ %,.2f%n", "S-501",             depS501);
-        System.out.printf("  %-22s : $ %,.2f%n", "S-502",             depS502);
-        System.out.printf("  %-22s : $ %,.2f%n", "S-503",             depS503);
-        System.out.printf("  %-22s : $ %,.2f%n", "S-506",             depS506);
-        System.out.printf("  %-22s : $ %,.2f%n", "S-504",             depS504);
-        System.out.printf("  %-22s : $ %,.2f%n", "S-505",             depS505);
-        System.out.printf("  %-22s : $ %,.2f%n", "S-507",             depS507);
-        System.out.printf("  %-22s : $ %,.2f%n", "TT (ITV)",          depTT);
-        System.out.println(sep3);
-        System.out.printf("  %-22s : $ %,.2f%n", "SUBTOTAL DEPREC.",  subtotalDep);
-
-        // ── RESUMEN FINAL ─────────────────────────────────────────
         System.out.println("\n" + sep1);
-        System.out.println("  💰 RESUMEN FINAL DE COSTOS");
+        System.out.println("  RESUMEN FINAL");
         System.out.println(sep1);
-        System.out.printf("  %-22s : $ %,.2f%n", "Estiba",            costoEstiba);
-        System.out.printf("  %-22s : $ %,.2f%n", "Diesel",            subtotal);
-        System.out.printf("  %-22s : $ %,.2f%n", "Energía Eléctrica", subtotalSTS);
-        System.out.printf("  %-22s : $ %,.2f%n", "Depreciación",      subtotalDep);
+        System.out.printf("  %-22s : $ %,.2f%n", "Estiba",            r.costoEstiba);
+        System.out.printf("  %-22s : $ %,.2f%n", "Diesel",            r.subtotalDiesel);
+        System.out.printf("  %-22s : $ %,.2f%n", "Energía Eléctrica", r.subtotalEnergia);
+        System.out.printf("  %-22s : $ %,.2f%n", "Depreciación",      r.subtotalDepreciacion);
         System.out.println(sep2);
-        System.out.printf("  %-22s : $ %,.2f%n", "COSTO NAVE TOTAL",  costoOperativo);
+        System.out.printf("  %-22s : $ %,.2f%n", "COSTO NAVE TOTAL",  r.costoNaveTotal);
         System.out.println(sep1);
-        System.out.printf("  %-22s : $ %,.2f%n", "★ COSTO POR TEU",   costoPorTeu);
+        System.out.printf("  %-22s : $ %,.2f%n", "COSTO POR TEU",     r.costoPorTeu);
         System.out.println(sep1 + "\n");
     }
 
     // =========================================================
-    //  IMPRIMIR RESUMEN EN CONSOLA
-    // =========================================================
-
-    public void imprimirResumenNave() {
-        HashMap<String, Object> datos = extraerDatosCostos(this.nroVisita);
-        if (datos.isEmpty()) return;
-
-        double sumaTeus   = getDouble(datos, "teus");
-        double sumaMovCont= getDouble(datos, "movCont");
-        double costoEstiba= getDouble(datos, "costoEstiba");
-        double costoRTG   = getDouble(datos, "costoRTG");
-
-        System.out.println("════════ RESUMEN DE LA NAVE ════════");
-        System.out.println("NOMBRE VISITA    : " + getString(datos, "nombreVisita"));
-        System.out.println("VISITA           : " + getString(datos, "nroVisita"));
-        System.out.println("MUELLE           : " + getString(datos, "muelle"));
-        System.out.println("SEMANA           : " + getString(datos, "semana"));
-        System.out.println("CUADRILLAS       : " + getDouble(datos, "cuadrillas"));
-        System.out.println("LINEA            : " + getString(datos, "lineaServicio"));
-        System.out.println("FECHA DE TERMINO : " + getString(datos, "fechaFin"));
-        System.out.println("TIEMPO EFECTIVO  : " + getDouble(datos, "tiempoEfectivo"));
-        System.out.println("MOV CONTENEDORES : " + (int) sumaMovCont);
-        System.out.println("SUMA DE TEUS     : " + (int) sumaTeus);
-
-        System.out.println("════════ RESUMEN COSTO ESTIBA ════════");
-        System.out.println("COSTO ESTIBA     : " + String.format("%.2f", costoEstiba));
-        System.out.println("COSTO TEU ESTIBA : " + (sumaTeus    > 0 ? String.format("%.2f", costoEstiba / sumaTeus)    : "N/A"));
-        System.out.println("COSTO CONT ESTIBA: " + (sumaMovCont > 0 ? String.format("%.2f", costoEstiba / sumaMovCont) : "N/A"));
-
-        System.out.println("════════ RESUMEN COSTO DIESEL ════════");
-        System.out.println("COSTO RTG        : " + String.format("%.2f", costoRTG));
-    }
-
-    // =========================================================
-    //  COPIAR CUADRILLAS A EXCEL DE NAVES
+    //  COPIAR CUADRILLAS — sin cambios
     // =========================================================
 
     public void copiarResumenPegarNaves() {
@@ -798,72 +675,49 @@ public class ControladorCostoTeu {
             lecturaExcelNaves   = new LecturaExcels(this.rutaNavesMes);
             lecturaExcelResumen = new LecturaExcels(this.rutaExcelResumen);
 
-            List<String> visitas     = lecturaExcelResumen.leerColumna(nombreHojaExcelResumen, colVisitaExcelResumen);
-            List<String> nombresHojas= lecturaExcelNaves.obtenerNombresDeHojas();
+            List<String> visitas      = lecturaExcelResumen.leerColumna(nombreHojaExcelResumen, colVisitaExcelResumen);
+            List<String> nombresHojas = lecturaExcelNaves.obtenerNombresDeHojas();
 
             for (String visita : visitas) {
                 if (visita == null || visita.trim().isEmpty()) continue;
-
                 String[] partes = visita.trim().split("-");
                 if (partes.length < 1) continue;
                 String nroVisitaRaw = partes[0].trim();
+                if (!nroVisitaRaw.matches("\\d+")) continue;
 
-                if (!nroVisitaRaw.matches("\\d+")) {
-                    System.out.println("[SKIP] No numérico: '" + nroVisitaRaw + "'");
-                    continue;
-                }
-
-                String nroVisitaSinCeros = String.valueOf(Integer.parseInt(nroVisitaRaw));
+                String nroSinCeros = String.valueOf(Integer.parseInt(nroVisitaRaw));
                 String hojaEncontrada = null;
 
                 for (String nombreHoja : nombresHojas) {
-                    String nombreHojaSinCeros;
-                    try {
-                        nombreHojaSinCeros = String.valueOf(Integer.parseInt(nombreHoja.trim()));
-                    } catch (NumberFormatException e) {
-                        nombreHojaSinCeros = nombreHoja.trim().replaceAll("^0+", "");
-                    }
-                    if (nombreHojaSinCeros.equals(nroVisitaSinCeros)) {
-                        hojaEncontrada = nombreHoja;
-                        break;
-                    }
+                    String hojaSinCeros;
+                    try { hojaSinCeros = String.valueOf(Integer.parseInt(nombreHoja.trim())); }
+                    catch (NumberFormatException e) { hojaSinCeros = nombreHoja.trim().replaceAll("^0+", ""); }
+                    if (hojaSinCeros.equals(nroSinCeros)) { hojaEncontrada = nombreHoja; break; }
                 }
+                if (hojaEncontrada == null) { System.out.println("[WARN] Sin hoja para: " + visita); continue; }
 
-                if (hojaEncontrada == null) {
-                    System.out.println("[WARN] No se encontró hoja para: " + visita);
-                    continue;
-                }
-
-                List<String> columnaVisitasResumen = lecturaExcelResumen.leerColumna(
-                        nombreHojaExcelResumen, colVisitaExcelResumen);
-
+                List<String> colVisitas = lecturaExcelResumen.leerColumna(nombreHojaExcelResumen, colVisitaExcelResumen);
                 int filaEnResumen = -1;
-                for (int i = 2; i < columnaVisitasResumen.size(); i++) {
-                    String v = columnaVisitasResumen.get(i).trim();
+                for (int i = 2; i < colVisitas.size(); i++) {
+                    String v = colVisitas.get(i).trim();
                     if (v.isEmpty() || !v.split("-")[0].trim().matches("\\d+")) continue;
-                    if (String.valueOf(Integer.parseInt(v.split("-")[0].trim())).equals(nroVisitaSinCeros)) {
-                        filaEnResumen = i;
-                        break;
+                    if (String.valueOf(Integer.parseInt(v.split("-")[0].trim())).equals(nroSinCeros)) {
+                        filaEnResumen = i; break;
                     }
                 }
-
                 if (filaEnResumen == -1) continue;
 
                 String valorCuadrillas = lecturaExcelResumen.leerCelda(
                         nombreHojaExcelResumen, filaEnResumen, colResumenCuadrillas);
-
                 lecturaExcelNaves.escribirCeldaNumero(
                         hojaEncontrada, filaCuadrillas, colCuadrillas,
                         Double.parseDouble(valorCuadrillas));
-                System.out.println("[OK] Cuadrillas pegadas en hoja: " + hojaEncontrada);
+                System.out.println("[OK] Cuadrillas → hoja: " + hojaEncontrada);
             }
-
             lecturaExcelNaves.guardar();
-            System.out.println("[OK] Proceso copiarResumenPegarNaves completado.");
 
-        } catch (Exception err) {
-            System.out.println("[ERROR] copiarResumenPegarNaves: " + err.getMessage());
-            err.printStackTrace();
+        } catch (Exception e) {
+            System.out.println("[ERROR] copiarResumenPegarNaves: " + e.getMessage());
         } finally {
             try { if (lecturaExcelNaves   != null) lecturaExcelNaves.cerrar();   } catch (Exception ignored) {}
             try { if (lecturaExcelResumen != null) lecturaExcelResumen.cerrar(); } catch (Exception ignored) {}
@@ -874,96 +728,43 @@ public class ControladorCostoTeu {
     //  UTILIDADES PRIVADAS
     // =========================================================
 
-    private String extraerMesDesdeFecha(String fechaStr) {
-        try {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("d-MMM-yy HH:mm", Locale.ENGLISH);
-            LocalDateTime dt = LocalDateTime.parse(fechaStr.trim(), formatter);
-            // Retorna abreviación del mes en inglés en mayúsculas: "JAN", "FEB", etc.
-            return dt.getMonth().getDisplayName(
-                    java.time.format.TextStyle.SHORT, Locale.ENGLISH).toUpperCase();
-        } catch (Exception e) {
-            System.out.println("[WARN] No se pudo extraer mes de: '" + fechaStr + "'");
-            return "";
-        }
-    }
-
-    private void setCeldaTexto(Row fila, int columna, String valor) {
-        org.apache.poi.ss.usermodel.Cell celda = fila.getCell(columna);
-        if (celda == null) celda = fila.createCell(columna);
-        celda.setCellValue(valor != null ? valor : "");
-    }
-
-    private void setCeldaNumero(Row fila, int columna, double valor) {
-        org.apache.poi.ss.usermodel.Cell celda = fila.getCell(columna);
-        if (celda == null) celda = fila.createCell(columna);
-        celda.setCellValue(valor);
-    }
-
     private double parsearDouble(String valor) {
         if (valor == null || valor.trim().isEmpty()) return 0.0;
-        try {
-            return Double.parseDouble(valor.trim().replace(",", "."));
-        } catch (NumberFormatException e) {
-            return 0.0;
-        }
+        try { return Double.parseDouble(valor.trim().replace(",", ".")); }
+        catch (NumberFormatException e) { return 0.0; }
     }
 
-    private String getString(HashMap<String, Object> datos, String clave) {
-        Object val = datos.get(clave);
-        return val != null ? val.toString() : "";
+    private void setCeldaTexto(Row fila, int col, String valor) {
+        org.apache.poi.ss.usermodel.Cell c = fila.getCell(col);
+        if (c == null) c = fila.createCell(col);
+        c.setCellValue(valor != null ? valor : "");
     }
 
-    private double getDouble(HashMap<String, Object> datos, String clave) {
-        Object val = datos.get(clave);
-        if (val instanceof Double) return (Double) val;
-        if (val instanceof Integer) return ((Integer) val).doubleValue();
-        return 0.0;
+    private void setCeldaNumero(Row fila, int col, double valor) {
+        org.apache.poi.ss.usermodel.Cell c = fila.getCell(col);
+        if (c == null) c = fila.createCell(col);
+        c.setCellValue(valor);
     }
 
     // =========================================================
     //  SETTERS
     // =========================================================
 
-    public void setNroVisita(String nroVisita)               { this.nroVisita = nroVisita; }
-    public void setRutaNavesMes(String rutaNavesMes)          { this.rutaNavesMes = rutaNavesMes; }
-    public void setRutaThroughput(String rutaThroughput)      { this.rutaThroughput = rutaThroughput; }
-    public void setRutaExcelDestino(String rutaExcelDestino)  {
-        this.rutaExcelDestino = rutaExcelDestino;
-        this.escritorDetalle  = new EscritorDetalleNave(rutaExcelDestino);
+    public void setRutaExcelDestino(String ruta) {
+        this.rutaExcelDestino = ruta;
+        this.escritorDetalle  = new EscritorDetalleNave(ruta);
     }
-    public void setNombreHojaExcelResumen(String n)           { this.nombreHojaExcelResumen = n; }
-
-    public void setCostoDepreciacionSTS(double costoDepreciacionSTS) {
-        this.costoDepreciacionSTS = costoDepreciacionSTS;
-    }
-
-    public void setCostoDepreciacionGM(double costoDepreciacionGM) {
-        this.costoDepreciacionGM = costoDepreciacionGM;
-    }
-
-    public void setCostoDepreciacionERTG(double costoDepreciacionERTG) {
-        this.costoDepreciacionERTG = costoDepreciacionERTG;
-    }
-
-    public void setCostoDepreciacionRTG(double costoDepreciacionRTG) {
-        this.costoDepreciacionRTG = costoDepreciacionRTG;
-    }
-
-    public void setCostoDepreciacionITV(double costoDepreciacionITV) {
-        this.costoDepreciacionITV = costoDepreciacionITV;
-    }
-
-    public void setCostoDepreciacionRSK(double costoDepreciacionRSK) {
-        this.costoDepreciacionRSK = costoDepreciacionRSK;
-    }
-
-    public void setCostoDepreciacionEH(double constoDepreciacionEH) {
-        this.costoDepreciacionEH = constoDepreciacionEH;
-    }
-
-    public void setNombreHojaCosmos(String nombreHojaCosmos) {this.nombreHojaCosmos = nombreHojaCosmos;}
-
-    public void setNombreHojaMoveHistory(String nombreHojaMoveHistory){this.nombreHojaMoveHistory = nombreHojaMoveHistory;}
-
-    public void setNumMesOM(int numMesOM){this.numMesOM = numMesOM;}
+    public void setRutaThroughput(String r)         { this.rutaThroughput    = r; }
+    public void setRutaNavesMes(String r)            { this.rutaNavesMes      = r; }
+    public void setNombreHojaCosmos(String n)        { this.nombreHojaCosmos  = n; }
+    public void setNombreHojaMoveHistory(String n)   { this.nombreHojaMoveHistory = n; }
+    public void setNombreHojaExcelResumen(String n)  { this.nombreHojaExcelResumen = n; }
+    public void setNumMesOM(int n)                   { this.numMesOM          = n; }
+    public void setCostoDepreciacionSTS(double v)    { this.costoDepreciacionSTS  = v; }
+    public void setCostoDepreciacionGM(double v)     { this.costoDepreciacionGM   = v; }
+    public void setCostoDepreciacionERTG(double v)   { this.costoDepreciacionERTG = v; }
+    public void setCostoDepreciacionRTG(double v)    { this.costoDepreciacionRTG  = v; }
+    public void setCostoDepreciacionITV(double v)    { this.costoDepreciacionITV  = v; }
+    public void setCostoDepreciacionRSK(double v)    { this.costoDepreciacionRSK  = v; }
+    public void setCostoDepreciacionEH(double v)     { this.costoDepreciacionEH   = v; }
 }

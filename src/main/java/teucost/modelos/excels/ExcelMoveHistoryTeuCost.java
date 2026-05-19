@@ -1,4 +1,4 @@
-package teucost.modelos;
+package teucost.modelos.excels;
 
 public class ExcelMoveHistoryTeuCost {
     private String rutaExcel;
@@ -6,6 +6,7 @@ public class ExcelMoveHistoryTeuCost {
     private final String keyColTimeCompleted = "Time Completed";
     private final String keyColCraneCheName = "Crane CHE Name";
     private final String keyColFetchCheName = "Fetch CHE Name";
+    private final String keyColCarryCheName = "Carry CHE Name";
     private final String keyColPutCheName = "Put CHE Name";
     private final String keyColFromPosition = "From Position";
     private final String keyColToPosition = "To Position";
@@ -83,6 +84,46 @@ public class ExcelMoveHistoryTeuCost {
 
     public int getColCarrierVisit() {
         return colCarrierVisit;
+    }
+
+    public String getKeyColCarryCheName() {
+        return keyColCarryCheName;
+    }
+
+    public void setRutaExcel(String rutaExcel) {
+        this.rutaExcel = rutaExcel;
+    }
+
+    public void setColTimeCompleted(int colTimeCompleted) {
+        this.colTimeCompleted = colTimeCompleted;
+    }
+
+    public void setColCraneCheName(int colCraneCheName) {
+        this.colCraneCheName = colCraneCheName;
+    }
+
+    public void setColPutCheName(int colPutCheName) {
+        this.colPutCheName = colPutCheName;
+    }
+
+    public void setColFetchCheName(int colFetchCheName) {
+        this.colFetchCheName = colFetchCheName;
+    }
+
+    public void setColCarryCheName(int colCarryCheName) {
+        this.colCarryCheName = colCarryCheName;
+    }
+
+    public void setColFromPosition(int colFromPosition) {
+        this.colFromPosition = colFromPosition;
+    }
+
+    public void setColToPosition(int colToPosition) {
+        this.colToPosition = colToPosition;
+    }
+
+    public void setColCarrierVisit(int colCarrierVisit) {
+        this.colCarrierVisit = colCarrierVisit;
     }
 
     public static class MoveHistoryTeuCost{
