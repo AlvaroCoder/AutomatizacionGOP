@@ -21,7 +21,7 @@ public class LecturaArchivosSAP {
         public final boolean tieneImagenes;
         public final int totalPaginas;
         public final int paginasConTexto;
-        public final String estado; // "LEGIBLE", "SOLO_IMAGEN", "MIXTO", "VACIO"
+        public final String estado;
 
         public ResultadoOCR(String ruta, boolean tieneTexto, boolean tieneImagenes,
                             int totalPaginas, int paginasConTexto) {

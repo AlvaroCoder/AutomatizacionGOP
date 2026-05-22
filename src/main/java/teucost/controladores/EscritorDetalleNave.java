@@ -8,41 +8,15 @@ import teucost.modelos.LecturaExcels;
 
 import java.util.HashMap;
 
-/**
- * Responsabilidad única: escribir la tabla de detalle de cálculo
- * en la hoja 1 del Excel destino.
- *
- * Recibe un HashMap<String, Object> ya calculado por ControladorCostoTeu
- * y lo vuelca en dos filas de encabezado (grupo + columna) más una fila
- * de datos por visita.
- *
- * Estructura de columnas (68 en total):
- *
- *   [0–6]   IDENTIFICACIÓN  → Mes, Semana, Nave, Visita, Línea, Muelle, Fecha fin
- *   [7–10]  OPERACIÓN       → Cuadrillas, T. efectivo, Mov. cont., TEUs
- *   [11–21] DURACIONES      → STS01-03, GM01-02, RTG01-06  (en horas)
- *   [22–23] ESTIBA          → Costo unit. cuadrilla, Total estiba
- *   [24–34] DIESEL          → RTG, RSK, EH, GM, ITV  (movs × tarifa) + subtotal
- *   [35–40] ENERGÍA         → STS01-03, RTG05-06  (tarifa × horas) + subtotal
- *   [41–60] DEPRECIACIONES  → por equipo + subtotal
- *   [61–67] RESUMEN         → estiba | diesel | energía | deprec | total | TEUs | $/TEU
- */
+
 public class EscritorDetalleNave {
 
-    // =========================================================
-    //  CONFIGURACIÓN
-    // =========================================================
-
     private final String rutaExcelDestino;
-    private final int    hojaDetalle = 1;   // índice 0-based de la hoja destino
+    private final int    hojaDetalle = 1;
 
-    // Tasas de depreciación (necesarias para reconstruir duraciones GM
-    // que no viajan en el HashMap — ver nota en escribirFila)
+
     private double tasaDepreciacionGM = 45.54;
 
-    // =========================================================
-    //  COLUMNAS — IDENTIFICACIÓN  (0–6)
-    // =========================================================
     private static final int D_MES       = 0;
     private static final int D_SEMANA    = 1;
     private static final int D_NAVE      = 2;
@@ -50,18 +24,11 @@ public class EscritorDetalleNave {
     private static final int D_LINEA     = 4;
     private static final int D_MUELLE    = 5;
     private static final int D_FECHA_FIN = 6;
-
-    // =========================================================
-    //  COLUMNAS — OPERACIÓN  (7–10)
-    // =========================================================
     private static final int D_CUADRILLAS = 7;
     private static final int D_T_EFECTIVO = 8;
     private static final int D_MOV_CONT   = 9;
     private static final int D_TEUS       = 10;
 
-    // =========================================================
-    //  COLUMNAS — DURACIONES EN HORAS  (11–21)
-    // =========================================================
     private static final int D_DUR_STS01 = 11;
     private static final int D_DUR_STS02 = 12;
     private static final int D_DUR_STS03 = 13;
@@ -81,10 +48,6 @@ public class EscritorDetalleNave {
     private static final int D_DUR_S506 = 27;
     private static final int D_DUR_S507 = 28;
 
-
-    // =========================================================
-    //  COLUMNAS — MOVIMIENTOS
-    // =========================================================
     private static final int D_MOV_STS01  = 29;
     private static final int D_MOV_STS02  = 30;
     private static final int D_MOV_STS03  = 31;
@@ -102,15 +65,9 @@ public class EscritorDetalleNave {
     private static final int D_MOV_S506 = 43;
     private static final int D_MOV_S507 = 44;
 
-    // =========================================================
-    //  COLUMNAS — ESTIBA  (22–23)
-    // =========================================================
     private static final int D_EST_UNIT  = 45;
     private static final int D_EST_TOTAL = 46;
 
-    // =========================================================
-    //  COLUMNAS — DIESEL  (24–29)
-    // =========================================================
     private static final int D_RTG_COSTO = 47;
     private static final int D_RSK_COSTO = 48;
     private static final int D_EH_COSTO  = 49;
@@ -118,9 +75,6 @@ public class EscritorDetalleNave {
     private static final int D_ITV_COSTO = 51;
     private static final int D_DIESEL_SUB= 52;
 
-    // =========================================================
-    //  COLUMNAS — ENERGÍA ELÉCTRICA  (35–40)
-    // =========================================================
     private static final int D_STS01_COSTO = 53;
     private static final int D_STS02_COSTO = 54;
     private static final int D_STS03_COSTO = 55;
@@ -128,9 +82,6 @@ public class EscritorDetalleNave {
     private static final int D_RTG06_COSTO = 57;
     private static final int D_ENER_SUB    = 58;
 
-    // =========================================================
-    //  COLUMNAS — DEPRECIACIONES  (41–60)
-    // =========================================================
     private static final int D_DEP_STS01 = 59;
     private static final int D_DEP_STS02 = 60;
     private static final int D_DEP_STS03 = 61;
@@ -152,9 +103,6 @@ public class EscritorDetalleNave {
     private static final int D_DEP_TT    = 77;
     private static final int D_DEP_SUB   = 78;
 
-    // =========================================================
-    //  COLUMNAS — RESUMEN FINAL  (61–67)
-    // =========================================================
     private static final int D_RES_ESTIBA  = 79;
     private static final int D_RES_DIESEL  = 80;
     private static final int D_RES_ENERGIA = 81;
@@ -163,9 +111,6 @@ public class EscritorDetalleNave {
     private static final int D_RES_TEUS    = 84;
     private static final int D_COSTO_TEU   = 85;
 
-    // =========================================================
-    //  METADATOS DE GRUPOS (nombre | col inicio | col fin | color hex)
-    // =========================================================
     private static final Object[][] GRUPOS = {
             { "IDENTIFICACIÓN",    D_MES,         D_FECHA_FIN,   "C9B1FF" },
             { "OPERACIÓN",         D_CUADRILLAS,  D_TEUS,        "9FE1CB" },
@@ -224,24 +169,11 @@ public class EscritorDetalleNave {
             "Depreciación total", "COSTO NAVE TOTAL", "TEUs", "COSTO / TEU"
     };
 
-    // =========================================================
-    //  CONSTRUCTOR
-    // =========================================================
 
     public EscritorDetalleNave(String rutaExcelDestino) {
         this.rutaExcelDestino = rutaExcelDestino;
     }
 
-    // =========================================================
-    //  API PÚBLICA — punto de entrada desde ControladorCostoTeu
-    // =========================================================
-
-    /**
-     * Escribe una fila de detalle en la hoja 1 con los datos ya calculados.
-     * Si los encabezados no existen los crea automáticamente.
-     *
-     * @param datos HashMap producido por ControladorCostoTeu.extraerDatosCostos()
-     */
     public void escribirFila(HashMap<String, Object> datos) {
         if (datos == null || datos.isEmpty()) {
             System.out.println("[WARN] EscritorDetalleNave: HashMap vacío, se omite la escritura.");
@@ -278,13 +210,8 @@ public class EscritorDetalleNave {
         }
     }
 
-    // =========================================================
-    //  POBLACIÓN DE FILA — un bloque por grupo de columnas
-    // =========================================================
-
     private void poblarFila(Row fila, HashMap<String, Object> d) {
 
-        // ── IDENTIFICACIÓN ────────────────────────────────────────
         txt(fila, D_MES,       str(d, "mes"));
         txt(fila, D_SEMANA,    str(d, "semana"));
         txt(fila, D_NAVE,      str(d, "nombreVisita"));
@@ -293,18 +220,15 @@ public class EscritorDetalleNave {
         txt(fila, D_MUELLE,    str(d, "muelle"));
         txt(fila, D_FECHA_FIN, str(d, "fechaFin"));
 
-        // ── OPERACIÓN ─────────────────────────────────────────────
         num(fila, D_CUADRILLAS, dbl(d, "cuadrillas"));
         num(fila, D_T_EFECTIVO, dbl(d, "tiempoEfectivo"));
         num(fila, D_MOV_CONT,   dbl(d, "movCont"));
         num(fila, D_TEUS,       dbl(d, "teus"));
 
-        // ── DURACIONES ────────────────────────────────────────────
         num(fila, D_DUR_STS01, dbl(d, "duracionSTS01"));
         num(fila, D_DUR_STS02, dbl(d, "duracionSTS02"));
         num(fila, D_DUR_STS03, dbl(d, "duracionSTS03"));
-        // GM01/GM02: el HashMap guarda el costo de depreciación, no la duración directamente.
-        // La reconstruimos: duracion = costoDeprec / tasaDeprec  (si tasa > 0)
+
         double durGM01 = tasaDepreciacionGM > 0
                 ? dbl(d, "costoDepreciacionGM01") / tasaDepreciacionGM : 0;
         double durGM02 = tasaDepreciacionGM > 0
@@ -326,8 +250,6 @@ public class EscritorDetalleNave {
         num(fila, D_DUR_S506, dbl(d, "duracionS506"));
         num(fila, D_DUR_S507, dbl(d, "duracionS507"));
 
-        // ── MOVIMIENTOS ────────────────────────────────────────────
-
         num(fila, D_MOV_STS01, dbl(d, "movimientosSTS01"));
         num(fila, D_MOV_STS02, dbl(d, "movimientosSTS02"));
         num(fila, D_MOV_STS03, dbl(d, "movimientosSTS03"));
@@ -347,17 +269,12 @@ public class EscritorDetalleNave {
         num(fila, D_MOV_S506, dbl(d, "movimientosS506"));
         num(fila, D_MOV_S507, dbl(d, "movimientosS507"));
 
-        // ── ESTIBA ────────────────────────────────────────────────
         double cuadrillas  = dbl(d, "cuadrillas");
         double totalEstiba = dbl(d, "costoEstiba");
         double unitEstiba  = cuadrillas > 0 ? totalEstiba / cuadrillas : 0;
         num(fila, D_EST_UNIT,  unitEstiba);
         num(fila, D_EST_TOTAL, totalEstiba);
 
-        // ── DIESEL ────────────────────────────────────────────────
-        // Los movimientos exactos (RTG, RSK, EH, ITV) no viajan en el HashMap actual.
-        // Si en el futuro se agregan (datos.put("movimientosRTG", ...)), este código
-        // los tomará automáticamente; mientras tanto quedan en 0 para no bloquear.
         num(fila, D_RTG_COSTO,  dbl(d, "costoRTG"));
         num(fila, D_RSK_COSTO,  dbl(d, "costoReactStacker"));
         num(fila, D_EH_COSTO,   dbl(d, "costoEmptyHand"));
@@ -404,10 +321,6 @@ public class EscritorDetalleNave {
         num(fila, D_RES_TEUS,    dbl(d, "teus"));
         num(fila, D_COSTO_TEU,   dbl(d, "costoPorTeu"));
     }
-
-    // =========================================================
-    //  CREACIÓN DE ENCABEZADOS
-    // =========================================================
 
     private boolean hojaContieneEncabezados(LecturaExcels excel) {
         try {
@@ -464,7 +377,6 @@ public class EscritorDetalleNave {
                 }
             }
 
-            // ── Fila 1: nombres individuales de columna ────────────
             Row filaNombres = hoja.createRow(1);
             filaNombres.setHeightInPoints(32);
 
@@ -495,10 +407,6 @@ public class EscritorDetalleNave {
         }
     }
 
-    // =========================================================
-    //  UTILIDADES PRIVADAS — escritura de celdas
-    // =========================================================
-
     private void txt(Row fila, int col, String valor) {
         Cell c = fila.getCell(col);
         if (c == null) c = fila.createCell(col);
@@ -510,10 +418,6 @@ public class EscritorDetalleNave {
         if (c == null) c = fila.createCell(col);
         c.setCellValue(valor);
     }
-
-    // =========================================================
-    //  UTILIDADES PRIVADAS — lectura del HashMap
-    // =========================================================
 
     private String str(HashMap<String, Object> d, String key) {
         Object v = d.get(key);
@@ -527,10 +431,6 @@ public class EscritorDetalleNave {
         return 0.0;   // clave ausente → 0, sin lanzar excepción
     }
 
-    // =========================================================
-    //  UTILIDADES PRIVADAS — colores
-    // =========================================================
-
     private byte[] hexToBytes(String hex) {
         return new byte[]{
                 (byte) Integer.parseInt(hex.substring(0, 2), 16),
@@ -538,10 +438,6 @@ public class EscritorDetalleNave {
                 (byte) Integer.parseInt(hex.substring(4, 6), 16)
         };
     }
-
-    // =========================================================
-    //  SETTER — solo si necesitas cambiar la tasa desde afuera
-    // =========================================================
 
     public void setTasaDepreciacionGM(double tasa) {
         this.tasaDepreciacionGM = tasa;

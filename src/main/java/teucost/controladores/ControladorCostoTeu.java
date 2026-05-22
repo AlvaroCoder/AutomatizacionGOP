@@ -102,10 +102,6 @@ public class ControladorCostoTeu {
     // Escritor de hoja de detalle
     private EscritorDetalleNave escritorDetalle;
 
-    // =========================================================
-    //  CONSTRUCTORES
-    // =========================================================
-
     public ControladorCostoTeu(
             String rutaThroughput,
             String rutaControlCosmos,
@@ -123,16 +119,6 @@ public class ControladorCostoTeu {
         this.rutaExcelResumen = rutaExcelResumen;
     }
 
-    // =========================================================
-    //  API PÚBLICA — punto de entrada principal
-    // =========================================================
-
-    /**
-     * Procesa un lote de visitas con el nuevo flujo optimizado:
-     *   Fase 1 → carga todas las fuentes UNA sola vez en memoria
-     *   Fase 2 → calcula ResultadoNave para cada visita en memoria
-     *   Fase 3 → escribe todas las filas al Excel destino UNA sola vez
-     */
     public void procesarVisitas(List<String> nrosVisita) {
         System.out.println("\n[INFO] ══════════════════════════════════════════════");
         System.out.println("[INFO]  INICIO — lote de " + nrosVisita.size() + " visitas");
@@ -146,8 +132,6 @@ public class ControladorCostoTeu {
         LecturaThroughput throughput   = cargarThroughput(nrosVisita);
         LecturaConciliado conciliado   = cargarConciliado();
 
-        // OM Mensual no cambia por visita — se carga una vez
-        // El mes se determina desde la primera visita con fecha válida
         LecturaOmMensual omMensual     = cargarOmMensual(cosmos, nrosVisita);
 
         if (omMensual == null) {

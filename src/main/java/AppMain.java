@@ -65,7 +65,6 @@ class DeckFrame extends JFrame {
         setLocationRelativeTo(null);
         setResizable(true);
 
-        // Ícono de la ventana (opcional, si existe en /icons/app.png)
         setIconImage(loadImageIconFromResource("/icons/app.png").getImage());
 
         setContentPane(buildContent());
@@ -176,7 +175,6 @@ class DeckFrame extends JFrame {
         return headerWrap;
     }
 
-    // ------------------ FORMULARIOS (CARD LAYOUT) ------------------
     private JComponent buildCenterForms() {
         formContainer = new JPanel();
         formCards = new CardLayout();
@@ -184,7 +182,6 @@ class DeckFrame extends JFrame {
         formContainer.setLayout(formCards);
         formContainer.setOpaque(false);
 
-        // Instanciamos los formularios con valores por defecto (tus hardcoded actuales)
         contaForm = new ContaFormPanel(
                 "C:\\Users\\alvaro.pupuche\\Desktop\\PRACTICANTE PLANEAMIENTO\\THROUGHPUT GOP 2026.xlsx",
                 "C:\\Users\\alvaro.pupuche\\Desktop\\PRACTICANTE PLANEAMIENTO\\Conciliado Trafico 1Q 2026 semana 9 al 26 de Febreo 2026.xlsx",
@@ -220,14 +217,11 @@ class DeckFrame extends JFrame {
 
         formContainer.add(controladorForm, "CONTROLADOR");
 
-        // Añadimos al CardLayout
         formContainer.add(contaForm, "CONTA");
         formContainer.add(nombradasForm, "NOMBRADAS");
 
-        // Mostrar por defecto el primero
         formCards.show(formContainer, "CONTA");
 
-        // Envolver en un panel con borde y título "Configuración"
         JPanel wrap = new JPanel(new BorderLayout());
         wrap.setOpaque(false);
         wrap.setBorder(BorderFactory.createTitledBorder(
@@ -250,7 +244,6 @@ class DeckFrame extends JFrame {
         appendLog("Formulario activado: " + key);
     }
 
-    // ------------------ FOOTER (PROGRESO + LOG) ------------------
     private JComponent buildFooter() {
         JPanel footer = new JPanel(new BorderLayout(8, 8));
         footer.setOpaque(false);
@@ -275,7 +268,6 @@ class DeckFrame extends JFrame {
         return footer;
     }
 
-    // ------------------ Helpers de carga de iconos ------------------
     private ImageIcon loadImageIconFromResource(String pathInResources) {
         try {
             URL url = getClass().getResource(pathInResources);
@@ -327,7 +319,6 @@ class DeckFrame extends JFrame {
         return btn;
     }
 
-    // --- Notificaciones con sonido y JOptionPane ---
     private void notifyWithSound(String titulo, String mensaje, int messageType) {
         // 1) Sonido (intenta WAV; si no hay, hace beep)
         boolean sounded = playWavFromResources(
@@ -349,10 +340,6 @@ class DeckFrame extends JFrame {
         });
     }
 
-    /**
-     * Intenta reproducir un WAV embebido en el classpath.
-     * Retorna true si se pudo reproducir, false si falla (para usar beep).
-     */
     private boolean playWavFromResources(String wavPath) {
         try (java.io.InputStream in = getClass().getResourceAsStream(wavPath)) {
             if (in == null) return false;
@@ -369,7 +356,6 @@ class DeckFrame extends JFrame {
         }
     }
 
-    // ------------------ Ejecución con SwingWorker ------------------
     private void runTask(String nombre, Runnable tarea) {
         setButtonsEnabled(false);
         progressBar.setIndeterminate(true);
@@ -428,7 +414,6 @@ class DeckFrame extends JFrame {
         });
     }
 
-    // ------------------ Acciones específicas (ahora usando valores del formulario) ------------------
 
     private void ejecutarActualizaConta() {
         final String pathThroughput = contaForm.getThroughputPath();
@@ -455,15 +440,14 @@ class DeckFrame extends JFrame {
     }
 
     private void ejecutarControladorCostoTeu() {
-        final String rutaThroughput   = controladorForm.getRutaThroughput();
-        final String rutaDataNaves    = controladorForm.getRutaDataNaves();
-        final String rutaConciliado   = controladorForm.getRutaConciliado();
-        final String rutaOMMensual    = controladorForm.getRutaOMMensual();
-        final String rutaMoveHistory  = controladorForm.getRutaMoveHistory();
-        final String rutaDestino      = controladorForm.getRutaExcelDestino();
-        final String hojaCosmos       = controladorForm.getHojaCosmos();
-        final String hojaMoveHistory  = controladorForm.getHojaMoveHistory();
-        final int    numMes           = controladorForm.getNumMesOM();
+        final String rutaThroughput  = controladorForm.getRutaThroughput();
+        final String rutaDataNaves   = controladorForm.getRutaDataNaves();
+        final String rutaConciliado  = controladorForm.getRutaConciliado();
+        final String rutaOMMensual   = controladorForm.getRutaOMMensual();
+        final String rutaMoveHistory = controladorForm.getRutaMoveHistory();
+        final String rutaDestino     = controladorForm.getRutaExcelDestino();
+        final String hojaCosmos      = controladorForm.getHojaCosmos();
+        final int    numMes          = controladorForm.getNumMesOM();
         final List<String> listaNaves = controladorForm.getListaNaves();
 
         runTask("Controlador Costo x TEU", () -> {
@@ -474,11 +458,10 @@ class DeckFrame extends JFrame {
                     rutaOMMensual,
                     rutaMoveHistory
             );
-            controlador.setRutaExcelDestino(rutaDestino);
             controlador.setNombreHojaCosmos(hojaCosmos);
-            controlador.setNombreHojaMoveHistory(hojaMoveHistory);
             controlador.setNumMesOM(numMes);
-           // controlador.escribirVariasVisitasEnTabla(listaNaves);
+            controlador.setRutaExcelDestino(rutaDestino);
+            controlador.procesarVisitas(listaNaves);   // ← nombre correcto del método
         });
     }
 
@@ -517,15 +500,13 @@ class DeckFrame extends JFrame {
             controlador.extraerDatosCuadrillas();
         });
     }
-    // ------------------ Componentes reutilizables para formularios ------------------
 
-    // Campo de archivo con etiqueta + JTextField + botón "Explorar..."
     static class FileField extends JPanel {
         private final JLabel label;
         private final JTextField text;
         private final JButton browse;
         private final boolean directoriesOnly;
-        private final String fileDescription; // e.g. "Archivos Excel (*.xlsx)"
+        private final String fileDescription;
 
         FileField(String etiqueta, boolean directoriesOnly, String fileDescription) {
             setOpaque(true);
@@ -539,13 +520,27 @@ class DeckFrame extends JFrame {
             text = new JTextField(38);
             text.setForeground(Color.BLACK);
 
-            browse = new JButton("Explorar...");
+            browse = new JButton();
+            ImageIcon iconoCarpeta = cargarIconoCarpeta();
+            if (iconoCarpeta != null) {
+                browse.setIcon(iconoCarpeta);
+                browse.setToolTipText("Explorar...");
+            } else {
+                browse.setText("Explorar...");
+            }
+
             browse.setBackground(new Color(0xDFF0FF));
             browse.setForeground(Color.BLACK);
             browse.setBorder(BorderFactory.createLineBorder(new Color(0x9CC6FF)));
             browse.setFocusPainted(false);
+            browse.setContentAreaFilled(true);
             browse.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             browse.addActionListener(e -> choose());
+
+            browse.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(0x9CC6FF)),
+                    BorderFactory.createEmptyBorder(4, 8, 4, 8)
+            ));
 
             GridBagConstraints gc = new GridBagConstraints();
             gc.insets = new Insets(4, 4, 4, 4);
@@ -557,6 +552,38 @@ class DeckFrame extends JFrame {
 
             gc.gridx = 2; gc.weightx = 0; gc.fill = GridBagConstraints.NONE;
             add(browse, gc);
+        }
+
+        private ImageIcon cargarIconoCarpeta() {
+            try {
+                URL urlRecurso = getClass().getResource("/assets/folder.png");
+                if (urlRecurso != null) {
+                    ImageIcon icon = new ImageIcon(urlRecurso);
+                    Image img = icon.getImage().getScaledInstance(18, 18, Image.SCALE_SMOOTH);
+                    return new ImageIcon(img);
+                }
+            } catch (Exception ignored) {}
+
+            try {
+                File f = new File("assets/folder.png");
+                if (f.exists()) {
+                    ImageIcon icon = new ImageIcon(f.getAbsolutePath());
+                    Image img = icon.getImage().getScaledInstance(18, 18, Image.SCALE_SMOOTH);
+                    return new ImageIcon(img);
+                }
+            } catch (Exception ignored) {}
+
+            try {
+                File f = new File("src/main/resources/assets/folder.png");
+                if (f.exists()) {
+                    ImageIcon icon = new ImageIcon(f.getAbsolutePath());
+                    Image img = icon.getImage().getScaledInstance(18, 18, Image.SCALE_SMOOTH);
+                    return new ImageIcon(img);
+                }
+            } catch (Exception ignored) {}
+
+            System.out.println("[WARN] No se encontró assets/folder.png — usando texto de fallback");
+            return null;
         }
 
         void setText(String value) { text.setText(value); }
@@ -619,7 +646,6 @@ class DeckFrame extends JFrame {
         void setEnabledAll(boolean enabled) { check.setEnabled(enabled); }
     }
 
-    // ------------------ Formularios concretos ------------------
 
     abstract static class BaseFormPanel extends JPanel {
         private final JButton ejecutarBtn = new JButton("Ejecutar");
@@ -638,7 +664,6 @@ class DeckFrame extends JFrame {
             ));
             ((TitledBorder) getBorder()).setTitleColor(Color.BLACK);
 
-            // Estilo botón ejecutar
             ejecutarBtn.setBackground(new Color(0xCFEAFF));
             ejecutarBtn.setForeground(Color.BLACK);
             ejecutarBtn.setFocusPainted(false);
@@ -660,16 +685,14 @@ class DeckFrame extends JFrame {
         void setExecuteEnabled(boolean enabled) { ejecutarBtn.setEnabled(enabled); }
     }
 
-// ---- Form: ActualizaConta ----
     static class ContaFormPanel extends BaseFormPanel {
 
         private final FileField tfThroughput;
         private final FileField tfConciliado;
-        private final JTextField tfAnchorObjetivo;   // Ancla (Named Range o Hoja!Celda)
+        private final JTextField tfAnchorObjetivo;
         private final IntField spRIni;
         private final IntField spRFin;
 
-        // 'sheet' se mantiene en el constructor por compatibilidad, pero no se usa.
         ContaFormPanel(String pathThroughput, String pathConciliado, int sheet, int rIni, int rFin) {
             super("Actualiza Conciliado Contabilidad", new Color(0xF5FBFF));
             setPreferredSize(new Dimension(0, 420));
@@ -684,17 +707,14 @@ class DeckFrame extends JFrame {
             gc.gridx = 0; gc.gridy = 0; gc.gridwidth = 3; gc.fill = GridBagConstraints.HORIZONTAL; gc.weightx = 1.0;
             add(tfThroughput, gc);
 
-            // --- Archivo Conciliado ---
             tfConciliado = new FileField("Conciliado Conta (.xlsx):", false, "Archivos Excel (*.xlsx, *.xls)");
             tfConciliado.setText(pathConciliado);
             gc.gridy = 1;
             add(tfConciliado, gc);
 
-// --- Misma fila: Fila inicio + Fila final + Ancla objetivo ---
             spRIni = new IntField("Fila inicio:", 0, 10000, 1, rIni);
             spRFin = new IntField("Fila final:", 0, 10000, 1, rFin);
 
-// subpanel para el nombre/ancla (label + textfield)
             JPanel pAnchorInline = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
             pAnchorInline.setOpaque(false);
             JLabel lAnchor = new JLabel("Hoja Objetivo Conta:");
@@ -706,7 +726,6 @@ class DeckFrame extends JFrame {
             pAnchorInline.add(lAnchor);
             pAnchorInline.add(tfAnchorObjetivo);
 
-// contenedor de la fila combinada
             JPanel numbers = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
             numbers.setOpaque(false);
             numbers.add(spRIni);
@@ -719,13 +738,11 @@ class DeckFrame extends JFrame {
             gc.weightx = 0;
             add(numbers, gc);
 
-// --- Botón ejecutar ---
             gc.gridy = 3;
             addExecuteButton(gc);
 
         }
 
-        // Getters para usar en ejecutarActualizaConta()
         String getThroughputPath() { return tfThroughput.getText(); }
         String getConciliadoPath() { return tfConciliado.getText(); }
         String getObjetivoAnchor() { return tfAnchorObjetivo.getText().trim(); }
@@ -734,8 +751,6 @@ class DeckFrame extends JFrame {
     }
 
 
-
-    // ---- Form: AgruparNombradas ----
     static class NombradasFormPanel extends BaseFormPanel {
         private final FileField tfInDir;
         private final FileField tfOutDir;
@@ -795,7 +810,6 @@ class DeckFrame extends JFrame {
             gc.fill = GridBagConstraints.HORIZONTAL;
             gc.weightx = 1.0;
 
-            // --- Archivos de entrada ---
             tfThroughput = new FileField("Throughput (.xlsx):", false, "Archivos Excel (*.xlsx, *.xls)");
             tfThroughput.setText(rutaThroughput);
             gc.gridy = 0; add(tfThroughput, gc);
@@ -820,11 +834,9 @@ class DeckFrame extends JFrame {
             tfExcelDestino.setText(rutaExcelDestino);
             gc.gridy = 5; add(tfExcelDestino, gc);
 
-            // --- Fila: Hoja Cosmos + Hoja MoveHistory + Mes OM ---
             JPanel rowConfig = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
             rowConfig.setOpaque(false);
 
-            // Hoja Cosmos
             JPanel pHojaCosmos = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
             pHojaCosmos.setOpaque(false);
             JLabel lHojaCosmos = new JLabel("Hoja Cosmos:");
@@ -835,7 +847,6 @@ class DeckFrame extends JFrame {
             pHojaCosmos.add(lHojaCosmos);
             pHojaCosmos.add(tfHojaCosmos);
 
-            // Hoja MoveHistory
             JPanel pHojaMH = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
             pHojaMH.setOpaque(false);
             JLabel lHojaMH = new JLabel("Hoja MoveHistory:");
@@ -846,7 +857,6 @@ class DeckFrame extends JFrame {
             pHojaMH.add(lHojaMH);
             pHojaMH.add(tfHojaMoveHistory);
 
-            // Mes OM
             spNumMesOM = new IntField("Mes OM (1-12):", 1, 12, 1, 3);
 
             rowConfig.add(pHojaCosmos);
@@ -856,7 +866,6 @@ class DeckFrame extends JFrame {
             gc.gridy = 6; gc.fill = GridBagConstraints.NONE; gc.weightx = 0;
             add(rowConfig, gc);
 
-            // --- Lista de naves ---
             JPanel pNaves = new JPanel(new BorderLayout(6, 0));
             pNaves.setOpaque(false);
             JLabel lNaves = new JLabel("Lista de naves (separadas por coma):");
@@ -870,12 +879,10 @@ class DeckFrame extends JFrame {
             gc.gridy = 7; gc.fill = GridBagConstraints.HORIZONTAL; gc.weightx = 1.0;
             add(pNaves, gc);
 
-            // --- Botón ejecutar ---
             gc.gridy = 8;
             addExecuteButton(gc);
         }
 
-        // Getters
         String getRutaThroughput()      { return tfThroughput.getText(); }
         String getRutaDataNaves()       { return tfDataNaves.getText(); }
         String getRutaConciliado()      { return tfConciliado.getText(); }
@@ -910,20 +917,17 @@ class DeckFrame extends JFrame {
             gc.fill = GridBagConstraints.HORIZONTAL;
             gc.weightx = 1.0;
 
-            // --- Carpeta de naves (PDFs SAP origen) ---
             tfCarpetaNaves = new FileField("Carpeta PDFs SAP:", true, null);
             tfCarpetaNaves.setText(rutaCarpetaNaves);
             gc.gridy = 0;
             add(tfCarpetaNaves, gc);
 
-            // --- Excel destino ---
             tfExcelDestino = new FileField("Excel destino (.xlsx):", false,
                     "Archivos Excel (*.xlsx)");
             tfExcelDestino.setText(rutaExcelDestino);
             gc.gridy = 1;
             add(tfExcelDestino, gc);
 
-            // --- Info sobre carpeta temporal ---
             JLabel lblInfo = new JLabel(
                     "ℹ Los PDFs se copiarán temporalmente a C:\\Temp\\CuadrillasTPE\\ antes del OCR.");
             lblInfo.setForeground(new Color(0x555555));
@@ -933,7 +937,6 @@ class DeckFrame extends JFrame {
             gc.weightx = 0;
             add(lblInfo, gc);
 
-            // --- Estado de Tesseract (detectado automáticamente) ---
             String estadoTess = detectarTesseract();
             lblTesseractEstado = new JLabel("🔍 Tesseract: " + estadoTess);
             lblTesseractEstado.setForeground(
@@ -942,12 +945,10 @@ class DeckFrame extends JFrame {
             gc.gridy = 3;
             add(lblTesseractEstado, gc);
 
-            // --- Botón ejecutar ---
             gc.gridy = 4;
             addExecuteButton(gc);
         }
 
-        // Detecta si Tesseract está instalado en rutas conocidas
         private String detectarTesseract() {
             String[] rutas = {
                     "C:/Program Files/Tesseract-OCR/tessdata",
