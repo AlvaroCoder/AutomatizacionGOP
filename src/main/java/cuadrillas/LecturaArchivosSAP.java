@@ -57,7 +57,7 @@ public class LecturaArchivosSAP {
     public LecturaArchivosSAP() {}
 
     public ResultadoOCR validarOCR(Path rutaPdf) {
-        final int UMBRAL_CARACTERES = 20; // mínimo de chars para considerar que hay texto real
+        final int UMBRAL_CARACTERES = 20;
 
         try (PDDocument doc = PDDocument.load(rutaPdf.toFile())) {
             int totalPaginas = doc.getNumberOfPages();
@@ -67,7 +67,6 @@ public class LecturaArchivosSAP {
             PDFTextStripper stripper = new PDFTextStripper();
 
             for (int i = 1; i <= totalPaginas; i++) {
-                // Extraer texto de esta página
                 stripper.setStartPage(i);
                 stripper.setEndPage(i);
                 String textoPagina = stripper.getText(doc).trim();

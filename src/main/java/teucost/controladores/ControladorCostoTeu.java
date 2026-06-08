@@ -145,6 +145,7 @@ public class ControladorCostoTeu {
         HashMap<String, Double> costosElectricos = omMensual.extraerResumenCostosEnergia();
 
         double costoPorMovRTG     = costosDiesel.getOrDefault("costoPorMovRTG",    0.0);
+        System.out.println("costoPorMovRTG = " + costoPorMovRTG);
         double costoPorMovStacker = costosDiesel.getOrDefault("costoPorMovSTK",    0.0);
         double costoPorMovEH      = costosDiesel.getOrDefault("costoPorMovEH",     0.0);
         double costoGMGalonHora   = costosDiesel.getOrDefault("costoGMGalonHora",  0.0);
@@ -156,7 +157,6 @@ public class ControladorCostoTeu {
         double costoERTG05Tarifa  = costosElectricos.getOrDefault("costoEnergiaRTG05", 0.0);
         double costoERTG06Tarifa  = costosElectricos.getOrDefault("costoEnergiaRTG06", 0.0);
 
-        // ── FASE 2: Calcular en memoria ───────────────────────────
         System.out.println("\n[FASE 2] Calculando costos en memoria...");
 
         List<ResultadoNave> resultados = new ArrayList<>();
@@ -193,7 +193,6 @@ public class ControladorCostoTeu {
             }
         }
 
-        // ── Resumen final ──────────────────────────────────────────
         System.out.println("\n════════════ RESUMEN DEL LOTE ════════════");
         System.out.println(" Total visitas    : " + nrosVisita.size());
         System.out.println(" Exitosas         : " + resultados.size());
@@ -202,9 +201,6 @@ public class ControladorCostoTeu {
         System.out.println("══════════════════════════════════════════");
     }
 
-    // =========================================================
-    //  FASE 1 — CARGA DE FUENTES
-    // =========================================================
 
     private LecturaMoveHistory cargarMoveHistory(List<String> visitas) {
         try {

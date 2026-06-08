@@ -18,11 +18,19 @@ public class LecturaExcels {
 
     public LecturaExcels(String rutaExcel) throws IOException {
         this.rutaExcel = rutaExcel;
-        this.workbook  = abrirWorkbook(rutaExcel);
+        this.workbook = abrirWorkbook(rutaExcel);
     }
 
     private Workbook abrirWorkbook(String ruta) throws IOException {
+        // Guardar valores originales para restaurarlos después
+        double ratioOriginal = ZipSecureFile.getMinInflateRatio();
+        long maxEntryOriginal = ZipSecureFile.getMaxEntrySize();
+
+        // Ajustar límites antes de abrir
+        ZipSecureFile.setMinInflateRatio(0.001);          // default es 0.01 (~100x ratio)
+        ZipSecureFile.setMaxEntrySize(500_000_000L);       // 500 MB descomprimido
         ZipSecureFile.setMaxFileCount(5000);
+
         try (FileInputStream fis = new FileInputStream(new File(ruta))) {
             String rutaLower = ruta.toLowerCase();
             if (rutaLower.endsWith(".xlsx") || rutaLower.endsWith(".xlsm")) {
@@ -33,6 +41,10 @@ public class LecturaExcels {
                 throw new IllegalArgumentException(
                         "Formato no soportado. Use .xlsx, .xlsm o .xls");
             }
+        } finally {
+            // Siempre restaurar — afecta a toda la JVM si no se hace
+            ZipSecureFile.setMinInflateRatio(ratioOriginal);
+            ZipSecureFile.setMaxEntrySize(maxEntryOriginal);
         }
     }
 
@@ -43,51 +55,84 @@ public class LecturaExcels {
         }
 
         XSSFWorkbook xssfWb = (XSSFWorkbook) workbook;
-        XSSFSheet    hoja   = xssfWb.getSheetAt(indiceHoja);
-        XSSFTable    tabla  = hoja.getTables().get(indiceTabla);
+        XSSFSheet hoja = xssfWb.getSheetAt(indiceHoja);
+        XSSFTable tabla = hoja.getTables().get(indiceTabla);
 
         AreaReference areaActual = new AreaReference(
-                tabla.getCTTable().getRef(), xssfWb.getSpreadsheetVersion());
+                tabla.getCTTable().getRef(),
+                xssfWb.getSpreadsheetVersion());
 
         CellReference esquinaInicio = areaActual.getFirstCell();
-        CellReference esquinaFin    = areaActual.getLastCell();
+        CellReference esquinaFin = areaActual.getLastCell();
 
         int filaFinTabla = esquinaFin.getRow();
-        int colInicio    = esquinaInicio.getCol();
-        int colFin       = esquinaFin.getCol();
+        int colInicio = esquinaInicio.getCol();
+        int colFin = esquinaFin.getCol();
         int nuevaFilaIdx = filaFinTabla + 1;
 
         Row filaAnterior = hoja.getRow(filaFinTabla);
-        Row nuevaFila    = hoja.createRow(nuevaFilaIdx);
+        Row nuevaFila = hoja.createRow(nuevaFilaIdx);
 
+        // Copiar altura y estilos reutilizando los existentes
         if (filaAnterior != null) {
             nuevaFila.setHeight(filaAnterior.getHeight());
+
             for (int c = colInicio; c <= colFin; c++) {
-                Cell celdaOrigen  = filaAnterior.getCell(c);
+                Cell celdaOrigen = filaAnterior.getCell(c);
                 Cell celdaDestino = nuevaFila.createCell(c);
-                if (celdaOrigen != null && celdaOrigen.getCellStyle() != null) {
-                    XSSFCellStyle estiloCopiado = xssfWb.createCellStyle();
-                    estiloCopiado.cloneStyleFrom(celdaOrigen.getCellStyle());
-                    celdaDestino.setCellStyle(estiloCopiado);
+
+                if (celdaOrigen != null) {
+                    // Reutilizar el estilo existente
+                    celdaDestino.setCellStyle(celdaOrigen.getCellStyle());
+
+                    // Copiar tipo de celda si fuera necesario
+                    switch (celdaOrigen.getCellType()) {
+                        case STRING:
+                            celdaDestino.setCellValue("");
+                            break;
+                        case NUMERIC:
+                            celdaDestino.setCellValue(0);
+                            break;
+                        case BOOLEAN:
+                            celdaDestino.setCellValue(false);
+                            break;
+                        case FORMULA:
+                            // Mantener la fórmula relativa
+                            celdaDestino.setCellFormula(celdaOrigen.getCellFormula());
+                            break;
+                        default:
+                            break;
+                    }
                 }
             }
         }
 
+        // Expandir la tabla
         CellReference nuevaEsquinaFin = new CellReference(nuevaFilaIdx, colFin);
         AreaReference nuevaArea = new AreaReference(
-                esquinaInicio, nuevaEsquinaFin, xssfWb.getSpreadsheetVersion());
+                esquinaInicio,
+                nuevaEsquinaFin,
+                xssfWb.getSpreadsheetVersion());
+
         tabla.getCTTable().setRef(nuevaArea.formatAsString());
 
         if (tabla.getCTTable().getAutoFilter() != null) {
-            tabla.getCTTable().getAutoFilter().setRef(nuevaArea.formatAsString());
+            tabla.getCTTable().getAutoFilter()
+                    .setRef(nuevaArea.formatAsString());
         }
 
-        System.out.println("[INFO] Tabla expandida: " + areaActual.formatAsString()
-                + " → " + nuevaArea.formatAsString()
-                + " | Nueva fila idx: " + nuevaFilaIdx);
+        System.out.println(
+                "[INFO] Tabla expandida: "
+                        + areaActual.formatAsString()
+                        + " → "
+                        + nuevaArea.formatAsString()
+                        + " | Nueva fila idx: "
+                        + nuevaFilaIdx);
 
         return nuevaFila;
     }
+
+
 
     public Row insertarFilaEnTabla(int indiceHoja) {
         return insertarFilaEnTabla(indiceHoja, 0);
@@ -389,9 +434,15 @@ public class LecturaExcels {
     }
 
     public void guardarComo(String rutaNueva) throws IOException {
-        try (FileOutputStream fos = new FileOutputStream(new File(rutaNueva))) {
+        File destino = new File(rutaNueva);
+        File temporal = new File(destino.getParent(), destino.getName() + ".tmp");
+
+        try (FileOutputStream fos = new FileOutputStream(temporal)) {
             workbook.write(fos);
         }
+
+        if (destino.exists()) destino.delete();
+        temporal.renameTo(destino);
     }
 
     public List<String> obtenerNombresDeHojas() {
@@ -478,9 +529,6 @@ public class LecturaExcels {
         return (cell != null) ? cell : row.createCell(indice);
     }
 
-    // =========================================================
-    //  GETTERS
-    // =========================================================
 
     public String getRutaExcel()   { return rutaExcel; }
     public Workbook getWorkbook()  { return workbook;  }

@@ -79,10 +79,6 @@ public class LecturaMoveHistory {
         }
     }
 
-    // =========================================================
-    //  DETECCIÓN DE COLUMNAS — dinámica por encabezado
-    // =========================================================
-
     private void detectarColumnas(XSSFSheet hoja) {
         XSSFRow encabezado = hoja.getRow(0);
         if (encabezado == null) {

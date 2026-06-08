@@ -123,7 +123,7 @@ public class LecturaControlCosmos {
                 case "Service":     encontradas.put(excelConfig.getKeyColService(),     cell.getColumnIndex()); break;
                 case "Start Work":  encontradas.put(excelConfig.getKeyColStartWork(),   cell.getColumnIndex()); break;
                 case "End Work":    encontradas.put(excelConfig.getKeyColEndWork(),      cell.getColumnIndex()); break;
-                case "CUADRILLAS":  encontradas.put(excelConfig.getKeyColCuadrillas(),  cell.getColumnIndex()); break;
+                case "Cuadrillas":  encontradas.put(excelConfig.getKeyColCuadrillas(),  cell.getColumnIndex()); break;
                 case "Visit":       encontradas.put(excelConfig.getKeyColVisit(),        cell.getColumnIndex()); break;
             }
         }

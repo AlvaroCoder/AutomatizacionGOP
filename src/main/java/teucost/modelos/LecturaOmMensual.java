@@ -13,12 +13,12 @@ public class LecturaOmMensual {
     private LecturaExcels lecturaOM = null;
     private int numMes;
 
-    private final int filaCostoMovRTG = 62;
-    private final int filaCostoMovSTK = 32;
-    private final int filaCostoMovEH  = 44;
-    private final int filaCostoMovTT  = 98;
-    private final int filaCostoUnitGalon = 96;
-    private final int filaCostoGMGalonHora = 91;
+    private final int filaCostoMovRTG = 68;
+    private final int filaCostoMovSTK = 34;
+    private final int filaCostoMovEH  = 48;
+    private final int filaCostoMovTT  = 108;
+    private final int filaCostoUnitGalon = 106;
+    private final int filaCostoGMGalonHora = 99;
 
     private final int filaCosto28 = 27;
     private final int filaCosto39 = 38;
@@ -88,6 +88,7 @@ public class LecturaOmMensual {
             // ✅ Bug 3 corregido: parsear con protección
             resumenCostos.put("costoPorMovRTG",
                     parsearDouble(lecturaOM.leerCelda(nombreHojaOMDiesel, filaCostoMovRTG, colSeleccionada)));
+            System.out.println("COSTO POR MOV RTG : "+parsearDouble(lecturaOM.leerCelda(nombreHojaOMDiesel, filaCostoMovRTG, colSeleccionada)));
             resumenCostos.put("costoPorMovSTK",
                     parsearDouble(lecturaOM.leerCelda(nombreHojaOMDiesel, filaCostoMovSTK, colSeleccionada)));
             resumenCostos.put("costoPorMovEH",

@@ -15,31 +15,15 @@ import java.util.*;
 
 public class LecturaConciliado {
 
-    // =========================================================
-    //  CONFIGURACIÓN
-    // =========================================================
 
     private final ExcelConciliado excelConfig;
-    private String nombreHoja = "Cont-1-26";
-
-    // =========================================================
-    //  CACHÉ — visita → DatosConciliado
-    // =========================================================
+    private String nombreHoja = "Cont-5-26";
 
     private Map<String, ExcelConciliado.DatosConciliado> cachePorVisita = null;
-
-    // =========================================================
-    //  CONSTRUCTOR
-    // =========================================================
 
     public LecturaConciliado(String rutaExcel) {
         this.excelConfig = new ExcelConciliado(rutaExcel);
     }
-
-    // =========================================================
-    //  CARGA — una sola apertura del Excel
-    // =========================================================
-
     /**
      * Abre el Excel, carga TODAS las filas en memoria y cierra.
      * Llamar UNA sola vez antes de hacer consultas.
